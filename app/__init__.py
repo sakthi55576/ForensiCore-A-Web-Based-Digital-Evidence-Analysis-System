@@ -22,7 +22,9 @@ def create_app():
     db.init_app(app)
     from app.auth import auth
     app.register_blueprint(auth)
-    from app.models import User
+    from app.cases import cases
+    app.register_blueprint(cases)
+    from app.models import User, Case
 
     with app.app_context():
         db.create_all()
