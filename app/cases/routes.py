@@ -58,3 +58,12 @@ def create_case():
     return render_template(
         "cases/create_case.html"
     )
+@cases.route("/<int:case_id>")
+def case_details(case_id):
+
+    case = Case.query.get_or_404(case_id)
+
+    return render_template(
+        "cases/case_details.html",
+        case=case
+    )
