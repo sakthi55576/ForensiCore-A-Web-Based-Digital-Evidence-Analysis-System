@@ -3,208 +3,267 @@
 
 <head>
 
-<title>Email Forensic Analysis Result</title>
+    <title>Email Forensic Analysis Report</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 </head>
 
-
 <body>
-
 
 <div class="container mt-5">
 
+    <h2>Email Forensic Analysis Report</h2>
 
-<h2>Email Forensic Analysis Report</h2>
+    <hr>
 
-<hr>
+    <!-- Header Information -->
 
+    <h4>Header Information</h4>
 
-<!-- Basic Information -->
+    <table class="table table-bordered">
 
-<h4>Header Information</h4>
+        <tr>
+            <th width="30%">From</th>
+            <td>{{ email_data["From"] }}</td>
+        </tr>
 
+        <tr>
+            <th>To</th>
+            <td>{{ email_data["To"] }}</td>
+        </tr>
 
-<table class="table table-bordered">
+        <tr>
+            <th>Subject</th>
+            <td>{{ email_data["Subject"] }}</td>
+        </tr>
 
+        <tr>
+            <th>Date</th>
+            <td>{{ email_data["Date"] }}</td>
+        </tr>
 
-{% for key, value in email_data.items() %}
+        <tr>
+            <th>Return Path</th>
+            <td>{{ email_data["Return-Path"] }}</td>
+        </tr>
 
-{% if key not in ["Findings","Risk Score","Risk Level"] %}
+        <tr>
+            <th>Message ID</th>
+            <td style="word-break:break-all;">
+                {{ email_data["Message-ID"] }}
+            </td>
+        </tr>
 
-<tr>
+        <tr>
+            <th>SPF</th>
+            <td>{{ email_data["SPF"] }}</td>
+        </tr>
 
-<th width="30%">
-{{ key }}
-</th>
+        <tr>
+            <th>DKIM</th>
+            <td>{{ email_data["DKIM"] }}</td>
+        </tr>
 
+        <tr>
+            <th>DMARC</th>
+            <td>{{ email_data["DMARC"] }}</td>
+        </tr>
 
-<td style="word-break:break-all;">
+    </table>
 
 
-{% if value %}
+    <!-- Sender IP -->
 
-{{ value }}
+    <h4 class="mt-4">Sender IP Address</h4>
 
-{% else %}
+    {% if email_data["Sender IP"] %}
 
-Not Available
+    <table class="table table-bordered">
 
-{% endif %}
+        <tr>
 
+            <th>IP Address</th>
 
-</td>
+        </tr>
 
+        {% for ip in email_data["Sender IP"] %}
 
-</tr>
+        <tr>
 
+            <td>{{ ip }}</td>
 
-{% endif %}
+        </tr>
 
+        {% endfor %}
 
-{% endfor %}
+    </table>
 
+    {% else %}
 
-</table>
+    <div class="alert alert-warning">
 
+        No Sender IP Found.
 
+    </div>
 
-<!-- Security Findings -->
+    {% endif %}
 
-<h4 class="mt-4">
 
-Security Findings
 
-</h4>
+    <!-- Geo Location -->
 
+    <h4 class="mt-4">IP Geolocation</h4>
 
-<table class="table table-bordered">
+    {% if email_data["IP Location"] %}
 
+    <table class="table table-bordered">
 
-<tr>
+        <tr>
 
-<th>Finding</th>
+            <th>IP</th>
 
-</tr>
+            <th>Country</th>
 
+            <th>Region</th>
 
-{% for item in email_data["Findings"] %}
+            <th>City</th>
 
+            <th>ISP</th>
 
-<tr>
+        </tr>
 
-<td>
+        {% for location in email_data["IP Location"] %}
 
-⚠ {{ item }}
+        <tr>
 
-</td>
+            <td>{{ location["IP"] }}</td>
 
-</tr>
+            <td>{{ location["Country"] }}</td>
 
+            <td>{{ location["Region"] }}</td>
 
-{% endfor %}
+            <td>{{ location["City"] }}</td>
 
+            <td>{{ location["ISP"] }}</td>
 
-</table>
+        </tr>
 
+        {% endfor %}
 
+    </table>
 
+    {% else %}
 
-<!-- Risk Analysis -->
+    <div class="alert alert-warning">
 
+        No Public IP Location Found.
 
-<h4 class="mt-4">
+    </div>
 
-Risk Assessment
+    {% endif %}
 
-</h4>
 
 
-<table class="table table-bordered">
+    <!-- Security Findings -->
 
+    <h4 class="mt-4">Security Findings</h4>
 
-<tr>
+    {% if email_data["Findings"] %}
 
-<th>
-Risk Score
-</th>
+    <table class="table table-bordered">
 
-<td>
+        <tr>
 
-{{ email_data["Risk Score"] }}
+            <th>Finding</th>
 
-</td>
+        </tr>
 
+        {% for item in email_data["Findings"] %}
 
-</tr>
+        <tr>
 
+            <td>⚠ {{ item }}</td>
 
+        </tr>
 
-<tr>
+        {% endfor %}
 
-<th>
-Risk Level
-</th>
+    </table>
 
+    {% else %}
 
-<td>
+    <div class="alert alert-success">
 
+        No Suspicious Findings Detected.
 
-{% if email_data["Risk Level"] == "HIGH" %}
+    </div>
 
-<span class="badge bg-danger">
+    {% endif %}
 
-HIGH
 
-</span>
 
+    <!-- Risk Assessment -->
 
-{% elif email_data["Risk Level"] == "MEDIUM" %}
+    <h4 class="mt-4">Risk Assessment</h4>
 
+    <table class="table table-bordered">
 
-<span class="badge bg-warning">
+        <tr>
 
-MEDIUM
+            <th width="30%">Risk Score</th>
 
-</span>
+            <td>{{ email_data["Risk Score"] }}</td>
 
+        </tr>
 
-{% else %}
+        <tr>
 
+            <th>Risk Level</th>
 
-<span class="badge bg-success">
+            <td>
 
-LOW
+                {% if email_data["Risk Level"] == "HIGH" %}
 
-</span>
+                    <span class="badge bg-danger">
 
+                        HIGH
 
-{% endif %}
+                    </span>
 
+                {% elif email_data["Risk Level"] == "MEDIUM" %}
 
-</td>
+                    <span class="badge bg-warning text-dark">
 
+                        MEDIUM
 
-</tr>
+                    </span>
 
+                {% else %}
 
-</table>
+                    <span class="badge bg-success">
 
+                        LOW
 
+                    </span>
 
-<a href="/email/" class="btn btn-primary mt-3">
+                {% endif %}
 
-Analyze Another Email
+            </td>
 
-</a>
+        </tr>
 
+    </table>
 
+
+    <a href="/email/" class="btn btn-primary mt-3">
+
+        Analyze Another Email
+
+    </a>
 
 </div>
 
-
 </body>
-
 
 </html>
