@@ -2,11 +2,14 @@ import os
 
 from flask import render_template, request
 
+from werkzeug.utils import secure_filename
+
 from . import email
 
 from .utils import (
     analyze_email,
-    extract_eml_header
+    extract_eml_header,
+    generate_file_hash
 )
 
 
@@ -30,13 +33,11 @@ def upload():
 
 
 
-
 @email.route("/analyze", methods=["POST"])
 def analyze():
 
 
-    header_text = ""
-
+    email_data = None
 
 
     # Check .eml file upload
@@ -47,53 +48,73 @@ def analyze():
         file = request.files["email_file"]
 
 
+        if file.filename != "":
 
-        if file and file.filename.endswith(".eml"):
 
-
-            file_path = os.path.join(
-
-                UPLOAD_FOLDER,
-
+            filename = secure_filename(
                 file.filename
-
             )
 
 
-            file.save(file_path)
+            upload_path = os.path.join(
+                UPLOAD_FOLDER,
+                filename
+            )
 
 
+            file.save(
+                upload_path
+            )
+
+
+            # Extract header from .eml
 
             header_text = extract_eml_header(
-
-                file_path
-
+                upload_path
             )
 
 
+            email_data = analyze_email(
+                header_text
+            )
 
 
-    # If no .eml file, use pasted header
+            # Evidence information
+
+            email_data["File Name"] = filename
 
 
-    if not header_text:
+            email_data["File Hash"] = generate_file_hash(
+                upload_path
+            )
+
+
+            email_data["Hash Algorithm"] = "SHA-256"
+
+
+
+    # Header paste option
+
+    if email_data is None:
 
 
         header_text = request.form.get(
-
-            "email_header",
-
-            ""
-
+            "email_header"
         )
 
 
+        email_data = analyze_email(
+            header_text
+        )
 
-    email_data = analyze_email(
 
-        header_text
+        email_data["File Name"] = "Manual Header Input"
 
-    )
+
+        email_data["File Hash"] = "Not Available"
+
+
+        email_data["Hash Algorithm"] = "SHA-256"
 
 
 

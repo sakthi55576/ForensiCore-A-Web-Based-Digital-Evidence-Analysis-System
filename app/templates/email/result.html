@@ -162,7 +162,66 @@
     </div>
 
     {% endif %}
+     <!-- Evidence Integrity -->
 
+<h4 class="mt-4">
+
+Evidence Integrity
+
+</h4>
+
+
+<table class="table table-bordered">
+
+
+<tr>
+
+<th>
+File Name
+</th>
+
+<td>
+
+{{ email_data["File Name"] }}
+
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<th>
+Hash Algorithm
+</th>
+
+<td>
+
+{{ email_data["Hash Algorithm"] }}
+
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<th>
+SHA-256 Hash
+</th>
+
+<td style="word-break:break-all;">
+
+{{ email_data["File Hash"] }}
+
+</td>
+
+</tr>
+
+
+</table>
 
 
     <!-- Security Findings -->

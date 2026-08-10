@@ -16,31 +16,29 @@
 <div class="container mt-5">
 
 
-<h2>Email Forensic Analyzer</h2>
+<h2>Email Forensic Analysis</h2>
 
 <hr>
 
 
 
-<form method="POST" 
+<form 
+method="POST"
 action="/email/analyze"
 enctype="multipart/form-data">
 
 
 
-<!-- EML Upload -->
-
+<!-- EMl Upload -->
 
 <h4>
-
 Upload Email Evidence (.eml)
-
 </h4>
 
 
 <label class="form-label">
 
-Select .eml File
+Select Email File
 
 </label>
 
@@ -53,33 +51,32 @@ name="email_file"
 
 class="form-control"
 
-accept=".eml"
-
->
+accept=".eml">
 
 
 <br>
 
 
-<hr>
+<div class="text-center">
+
+<b>OR</b>
+
+</div>
 
 
-<h4>
-
-OR
-
-</h4>
+<br>
 
 
 
 <!-- Header Paste -->
 
 
-<label class="form-label">
+<h4>
 
-Paste Complete Email Header
+Paste Email Header
 
-</label>
+</h4>
+
 
 
 <textarea
@@ -90,9 +87,9 @@ class="form-control"
 
 rows="15"
 
-placeholder="Paste Email Header Here..."
+placeholder="Paste complete email header here...">
 
-></textarea>
+</textarea>
 
 
 
@@ -100,7 +97,11 @@ placeholder="Paste Email Header Here..."
 
 
 
-<button class="btn btn-primary">
+<button
+
+type="submit"
+
+class="btn btn-primary">
 
 Analyze Email
 

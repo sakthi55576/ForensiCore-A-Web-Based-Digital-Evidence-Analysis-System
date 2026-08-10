@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Browser History Analysis Report</title>
+
+<link
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+rel="stylesheet"
+>
+
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+
+<h2>
+Browser History Analysis Report
+</h2>
+
+<hr>
+
+
+<!-- Summary -->
+
+<h4>
+Summary
+</h4>
+
+<table class="table table-bordered">
+
+<tr>
+
+<th width="30%">
+Total URLs
+</th>
+
+<td>
+{{ history_data["Total URLs"] }}
+</td>
+
+</tr>
+
+</table>
+
+
+
+<!-- Top Visited Websites -->
+
+<h4 class="mt-4">
+Top Visited Websites
+</h4>
+
+<table class="table table-bordered">
+
+<thead class="table-dark">
+
+<tr>
+
+<th width="10%">
+Rank
+</th>
+
+<th>
+Website
+</th>
+
+<th width="20%">
+Visit Count
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for site in top_sites %}
+
+<tr>
+
+<td>
+{{ loop.index }}
+</td>
+
+<td style="word-break:break-all;">
+{{ site["URL"] }}
+</td>
+
+<td>
+{{ site["Visit Count"] }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+
+
+<!-- Browsing Timeline -->
+
+<h4 class="mt-4">
+Browsing Timeline
+</h4>
+
+<div
+style="
+max-height: 400px;
+overflow-y: auto;
+"
+>
+
+<table class="table table-bordered">
+
+<thead class="table-dark">
+
+<tr>
+
+<th>
+Time
+</th>
+
+<th>
+Website
+</th>
+
+<th>
+Title
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for item in timeline %}
+
+<tr>
+
+<td>
+{{ item["Last Visit"] }}
+</td>
+
+<td style="word-break:break-all;">
+{{ item["URL"] }}
+</td>
+
+<td>
+{{ item["Title"] }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<!-- Evidence Integrity -->
+
+<h4 class="mt-4">
+Evidence Integrity
+</h4>
+
+<table class="table table-bordered">
+
+<tr>
+
+<th width="30%">
+Evidence File
+</th>
+
+<td>
+{{ history_file }}
+</td>
+
+</tr>
+
+<tr>
+
+<th>
+Hash Algorithm
+</th>
+
+<td>
+SHA-256
+</td>
+
+</tr>
+
+<tr>
+
+<th>
+SHA-256 Hash
+</th>
+
+<td style="word-break:break-all;">
+{{ file_hash }}
+</td>
+
+</tr>
+
+</table>
+
+
+
+<!-- Risk Assessment -->
+
+<h4 class="mt-4">
+Risk Assessment
+</h4>
+
+<table class="table table-bordered">
+
+<tr>
+
+<th width="30%">
+Risk Score
+</th>
+
+<td>
+{{ risk_data["Risk Score"] }} / 100
+</td>
+
+</tr>
+
+<tr>
+
+<th>
+Risk Level
+</th>
+
+<td>
+{{ risk_data["Risk Level"] }}
+</td>
+
+</tr>
+
+</table>
+
+
+
+<!-- Security Findings -->
+
+<h5 class="mt-3">
+Security Findings
+</h5>
+
+<ul>
+
+{% for finding in risk_data["Findings"] %}
+
+<li>
+{{ finding }}
+</li>
+
+{% endfor %}
+
+</ul>
+
+
+
+<!-- View Full History -->
+
+<div class="text-center mt-4">
+
+<a
+href="{{ url_for('browser.full_history', file=history_file) }}"
+class="btn btn-primary"
+>
+
+View Full History
+
+</a>
+
+</div>
+
+
+
+<!-- Analyze Another History -->
+
+<div class="text-center mt-3">
+
+<a
+href="/browser/"
+class="btn btn-secondary"
+>
+
+Analyze Another History
+
+</a>
+
+</div>
+
+
+</div>
+
+</body>
+
+</html>

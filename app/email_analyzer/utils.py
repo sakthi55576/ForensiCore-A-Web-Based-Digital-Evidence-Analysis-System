@@ -1,6 +1,7 @@
 import re
 import requests
 import ipaddress
+import hashlib 
 
 from email import policy
 from email.parser import BytesParser
@@ -55,7 +56,35 @@ def extract_eml_header(file_path):
 
         return ""
 
+# SHA-256 Evidence Hash Generation
 
+def generate_file_hash(file_path):
+
+    sha256 = hashlib.sha256()
+
+
+    with open(
+        file_path,
+        "rb"
+    ) as f:
+
+
+        while True:
+
+
+            chunk = f.read(4096)
+
+
+            if not chunk:
+
+                break
+
+
+            sha256.update(chunk)
+
+
+
+    return sha256.hexdigest()
 
 def get_ip_location(ip):
 
@@ -176,6 +205,11 @@ def analyze_email(header_text):
         "Findings": [],
 
         "Risk Score": 0,
+        "File Name": "Not Available",
+
+        "File Hash": "Not Available",
+
+        "Hash Algorithm": "SHA-256",
         "Risk Level": "LOW"
 
     }

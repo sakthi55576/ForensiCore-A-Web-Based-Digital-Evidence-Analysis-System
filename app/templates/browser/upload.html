@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Browser History Analyzer</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+
+<body>
+
+
+<div class="container mt-5">
+
+
+<h2>
+Browser History Analyzer
+</h2>
+
+
+<hr>
+
+
+<div class="alert alert-info">
+
+Upload Chrome / Edge History database file for forensic analysis.
+
+</div>
+
+
+
+<form method="POST" 
+      action="/browser/analyze"
+      enctype="multipart/form-data">
+
+
+<label class="form-label">
+
+Select Browser History File
+
+</label>
+
+
+<input 
+type="file"
+name="history_file"
+class="form-control"
+required>
+
+
+
+<br>
+
+
+<button class="btn btn-primary">
+
+Analyze Browser History
+
+</button>
+
+
+
+</form>
+
+
+</div>
+
+
+</body>
+
+</html>
