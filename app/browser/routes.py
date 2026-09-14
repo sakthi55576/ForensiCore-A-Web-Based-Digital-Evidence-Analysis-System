@@ -19,13 +19,40 @@ from .utils import (
 )
 
 
-UPLOAD_FOLDER = "app/uploads/browser"
+# ==========================================
+# PROJECT ROOT
+# ==========================================
+
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        ".."
+    )
+)
 
 
-if not os.path.exists(UPLOAD_FOLDER):
+# ==========================================
+# BROWSER UPLOAD FOLDER
+# ==========================================
 
-    os.makedirs(UPLOAD_FOLDER)
+UPLOAD_FOLDER = os.path.join(
+    PROJECT_ROOT,
+    "app",
+    "uploads",
+    "browser"
+)
 
+
+os.makedirs(
+    UPLOAD_FOLDER,
+    exist_ok=True
+)
+
+
+# ==========================================
+# BROWSER UPLOAD PAGE
+# ==========================================
 
 @browser.route("/")
 def upload():
@@ -35,11 +62,19 @@ def upload():
     )
 
 
+# ==========================================
+# ANALYZE BROWSER HISTORY
+# ==========================================
+
 @browser.route(
     "/analyze",
     methods=["POST"]
 )
 def analyze():
+
+    # --------------------------------------
+    # Check uploaded file
+    # --------------------------------------
 
     if "history_file" not in request.files:
 
@@ -54,10 +89,18 @@ def analyze():
         return "No selected file"
 
 
+    # --------------------------------------
+    # Secure filename
+    # --------------------------------------
+
     filename = secure_filename(
         file.filename
     )
 
+
+    # --------------------------------------
+    # File path
+    # --------------------------------------
 
     file_path = os.path.join(
         UPLOAD_FOLDER,
@@ -65,67 +108,73 @@ def analyze():
     )
 
 
-    file.save(file_path)
+    # --------------------------------------
+    # Save browser evidence
+    # --------------------------------------
+
+    file.save(
+        file_path
+    )
 
 
-    # --------------------------------
-    # SHA-256 Evidence Integrity
-    # --------------------------------
+    # ======================================
+    # SHA-256 HASH
+    # ======================================
 
     file_hash = generate_file_hash(
         file_path
     )
 
 
-    # --------------------------------
-    # Browser History Extraction
-    # --------------------------------
+    # ======================================
+    # EXTRACT BROWSER HISTORY
+    # ======================================
 
     history_data = extract_history(
         file_path
     )
 
 
-    # --------------------------------
-    # Top Visited Websites
-    # --------------------------------
+    # ======================================
+    # TOP VISITED WEBSITES
+    # ======================================
 
     top_sites = get_top_websites(
         history_data
     )
 
 
-    # --------------------------------
-    # Browsing Timeline
-    # --------------------------------
+    # ======================================
+    # BROWSING TIMELINE
+    # ======================================
 
     timeline = get_browsing_timeline(
         history_data
     )
 
 
-    # --------------------------------
-    # Browser Risk Assessment
-    # --------------------------------
+    # ======================================
+    # BROWSER RISK ASSESSMENT
+    # ======================================
 
     risk_data = analyze_browser_risk(
         history_data
     )
 
 
-    # --------------------------------
-    # Store Browser Analysis
-    # --------------------------------
+    # ======================================
+    # STORE BROWSER REPORT IN SESSION
+    # ======================================
 
     session["browser_report"] = {
+
+        "history_file": filename,
 
         "history_data": history_data,
 
         "top_sites": top_sites,
 
         "timeline": timeline,
-
-        "history_file": filename,
 
         "file_hash": file_hash,
 
@@ -134,9 +183,44 @@ def analyze():
     }
 
 
-    # --------------------------------
-    # Display Browser Result
-    # --------------------------------
+    # ======================================
+    # DEBUG INFORMATION
+    # ======================================
+
+    print(
+        "\n=========================================="
+    )
+
+    print(
+        "BROWSER REPORT SESSION SAVED"
+    )
+
+    print(
+        "History File:",
+        filename
+    )
+
+    print(
+        "Total URLs:",
+        history_data.get(
+            "Total URLs",
+            0
+        )
+    )
+
+    print(
+        "Risk Data:",
+        risk_data
+    )
+
+    print(
+        "==========================================\n"
+    )
+
+
+    # ======================================
+    # DISPLAY RESULT PAGE
+    # ======================================
 
     return render_template(
 
@@ -157,7 +241,13 @@ def analyze():
     )
 
 
-@browser.route("/history")
+# ==========================================
+# VIEW FULL HISTORY
+# ==========================================
+
+@browser.route(
+    "/history"
+)
 def full_history():
 
     history_file = request.args.get(
@@ -165,10 +255,27 @@ def full_history():
     )
 
 
+    # --------------------------------------
+    # Check filename
+    # --------------------------------------
+
     if not history_file:
 
         return "History file not specified"
 
+
+    # --------------------------------------
+    # Security: secure filename
+    # --------------------------------------
+
+    history_file = secure_filename(
+        history_file
+    )
+
+
+    # --------------------------------------
+    # Browser evidence path
+    # --------------------------------------
 
     file_path = os.path.join(
         UPLOAD_FOLDER,
@@ -176,15 +283,29 @@ def full_history():
     )
 
 
-    if not os.path.exists(file_path):
+    # --------------------------------------
+    # Check file exists
+    # --------------------------------------
+
+    if not os.path.exists(
+        file_path
+    ):
 
         return "History file not found"
 
+
+    # --------------------------------------
+    # Extract history
+    # --------------------------------------
 
     history_data = extract_history(
         file_path
     )
 
+
+    # --------------------------------------
+    # Display complete history
+    # --------------------------------------
 
     return render_template(
 

@@ -232,35 +232,57 @@ def generate_file_hash(file_path):
 def analyze_browser_risk(history_data):
 
     risk_score = 0
-
     findings = []
 
     http_count = 0
-
     ip_url_count = 0
-
     high_visit_count = 0
 
+    suspicious_keywords = [
+        "phishing",
+        "malware",
+        "ransomware",
+        "hack",
+        "exploit",
+        "botnet",
+        "keylogger",
+        "trojan",
+        "payload",
+        "crack"
+    ]
 
-    for item in history_data["History"]:
-
-        url = item["URL"]
-
-        visit_count = item["Visit Count"]
+    suspicious_url_count = 0
 
 
-        # --------------------------------
-        # HTTP URL Detection
-        # --------------------------------
+    # ==========================================
+    # ANALYZE BROWSER HISTORY
+    # ==========================================
 
-        if url.lower().startswith("http://"):
+    for item in history_data.get("History", []):
+
+        url = str(
+            item.get("URL", "")
+        )
+
+        visit_count = int(
+            item.get("Visit Count", 0)
+        )
+
+        url_lower = url.lower()
+
+
+        # ======================================
+        # 1. HTTP URL DETECTION
+        # ======================================
+
+        if url_lower.startswith("http://"):
 
             http_count += 1
 
 
-        # --------------------------------
-        # IP Address URL Detection
-        # --------------------------------
+        # ======================================
+        # 2. IP ADDRESS URL DETECTION
+        # ======================================
 
         ip_pattern = (
             r"https?://"
@@ -276,62 +298,123 @@ def analyze_browser_risk(history_data):
             ip_url_count += 1
 
 
-        # --------------------------------
-        # High Visit Frequency
-        # --------------------------------
+        # ======================================
+        # 3. HIGH VISIT FREQUENCY
+        # ======================================
 
         if visit_count >= 50:
 
             high_visit_count += 1
 
 
-    # --------------------------------
-    # Risk Scoring
-    # --------------------------------
+        # ======================================
+        # 4. SUSPICIOUS KEYWORD DETECTION
+        # ======================================
+
+        keyword_found = False
+
+        for keyword in suspicious_keywords:
+
+            if keyword in url_lower:
+
+                keyword_found = True
+                break
+
+
+        if keyword_found:
+
+            suspicious_url_count += 1
+
+
+    # ==========================================
+    # RISK SCORING
+    # ==========================================
+
+    # ------------------------------------------
+    # HTTP activity
+    # ------------------------------------------
 
     if http_count > 0:
 
-        risk_score += 10
+        risk_score += min(
+            http_count * 2,
+            10
+        )
 
         findings.append(
             f"HTTP URLs detected: {http_count}"
         )
 
 
+    # ------------------------------------------
+    # IP-based URLs
+    # ------------------------------------------
+
     if ip_url_count > 0:
 
-        risk_score += 20
-
-        findings.append(
-            f"IP-address based URLs detected: {ip_url_count}"
+        risk_score += min(
+            ip_url_count * 5,
+            25
         )
 
+        findings.append(
+            f"IP-address based URLs detected: "
+            f"{ip_url_count}"
+        )
+
+
+    # ------------------------------------------
+    # High-frequency browsing
+    # ------------------------------------------
 
     if high_visit_count > 0:
 
-        risk_score += 10
+        risk_score += min(
+            high_visit_count * 3,
+            15
+        )
 
         findings.append(
-            f"High-frequency visited URLs detected: {high_visit_count}"
+            f"High-frequency visited URLs detected: "
+            f"{high_visit_count}"
         )
 
 
-    # Maximum score
+    # ------------------------------------------
+    # Suspicious keywords
+    # ------------------------------------------
+
+    if suspicious_url_count > 0:
+
+        risk_score += min(
+            suspicious_url_count * 10,
+            30
+        )
+
+        findings.append(
+            f"URLs containing suspicious security-related "
+            f"keywords detected: {suspicious_url_count}"
+        )
+
+
+    # ==========================================
+    # LIMIT SCORE
+    # ==========================================
 
     if risk_score > 100:
 
         risk_score = 100
 
 
-    # --------------------------------
-    # Risk Level
-    # --------------------------------
+    # ==========================================
+    # RISK LEVEL
+    # ==========================================
 
-    if risk_score >= 40:
+    if risk_score >= 70:
 
         risk_level = "HIGH"
 
-    elif risk_score >= 20:
+    elif risk_score >= 40:
 
         risk_level = "MEDIUM"
 
@@ -340,14 +423,20 @@ def analyze_browser_risk(history_data):
         risk_level = "LOW"
 
 
-    # No findings
+    # ==========================================
+    # NO FINDINGS
+    # ==========================================
 
     if not findings:
 
         findings.append(
-            "No significant browser risk indicators detected"
+            "No significant browser risk indicators detected."
         )
 
+
+    # ==========================================
+    # RETURN RESULT
+    # ==========================================
 
     return {
 

@@ -1,122 +1,318 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-<title>Email Forensic Analyzer</title>
+    <meta charset="UTF-8">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Email Analyzer | ForensiCore</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet">
 
 </head>
 
 
 <body>
 
-
-<div class="container mt-5">
-
-
-<h2>Email Forensic Analysis</h2>
-
-<hr>
+<div class="container mt-5 mb-5">
 
 
+    <!-- ===================================== -->
+    <!-- PAGE HEADER -->
+    <!-- ===================================== -->
 
-<form 
-method="POST"
-action="/email/analyze"
-enctype="multipart/form-data">
+    <div class="d-flex justify-content-between align-items-center mb-4">
 
+        <div>
 
+            <h2 class="fw-bold mb-1">
+                Email Header Analyzer
+            </h2>
 
-<!-- EMl Upload -->
+            <p class="text-muted mb-0">
+                Select an existing email evidence for forensic analysis.
+            </p>
 
-<h4>
-Upload Email Evidence (.eml)
-</h4>
-
-
-<label class="form-label">
-
-Select Email File
-
-</label>
+        </div>
 
 
-<input
+        <a
+            href="{{ url_for('cases.dashboard') }}"
+            class="btn btn-outline-secondary"
+        >
+            ← Dashboard
+        </a>
 
-type="file"
-
-name="email_file"
-
-class="form-control"
-
-accept=".eml">
-
-
-<br>
+    </div>
 
 
-<div class="text-center">
+    <!-- ===================================== -->
+    <!-- INFORMATION -->
+    <!-- ===================================== -->
 
-<b>OR</b>
+    <div class="alert alert-info">
 
-</div>
+        <strong>Evidence-First Analysis:</strong>
 
+        Email evidence is uploaded once through
+        <strong>Evidence Management</strong>.
 
-<br>
+        Select an existing <strong>.eml</strong> evidence file below
+        to perform email header analysis.
 
-
-
-<!-- Header Paste -->
-
-
-<h4>
-
-Paste Email Header
-
-</h4>
+    </div>
 
 
+    <!-- ===================================== -->
+    <!-- EMAIL EVIDENCE -->
+    <!-- ===================================== -->
 
-<textarea
+    <div class="card shadow-sm">
 
-name="email_header"
+        <div class="card-header bg-success text-white">
 
-class="form-control"
+            <h5 class="mb-0">
+                Available Email Evidence
+            </h5>
 
-rows="15"
-
-placeholder="Paste complete email header here...">
-
-</textarea>
-
-
-
-<br>
+        </div>
 
 
-
-<button
-
-type="submit"
-
-class="btn btn-primary">
-
-Analyze Email
-
-</button>
+        <div class="card-body">
 
 
+            {% if evidence_list %}
 
-</form>
+                <div class="table-responsive">
 
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    ID
+                                </th>
+
+                                <th>
+                                    Evidence File
+                                </th>
+
+                                <th>
+                                    Case ID
+                                </th>
+
+                                <th>
+                                    File Type
+                                </th>
+
+                                <th>
+                                    Size
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th>
+                                    Action
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for evidence in evidence_list %}
+
+                                <tr>
+
+
+                                    <!-- ID -->
+
+                                    <td>
+
+                                        <strong>
+                                            #{{ evidence.id }}
+                                        </strong>
+
+                                    </td>
+
+
+                                    <!-- FILE -->
+
+                                    <td>
+
+                                        <strong>
+                                            {{ evidence.original_filename }}
+                                        </strong>
+
+                                        <br>
+
+                                        <small class="text-muted">
+
+                                            Stored:
+                                            {{ evidence.stored_filename }}
+
+                                        </small>
+
+                                    </td>
+
+
+                                    <!-- CASE -->
+
+                                    <td>
+
+                                        CASE-{{ evidence.case_id }}
+
+                                    </td>
+
+
+                                    <!-- FILE TYPE -->
+
+                                    <td>
+
+                                        {{ evidence.file_type }}
+
+                                    </td>
+
+
+                                    <!-- SIZE -->
+
+                                    <td>
+
+                                        {% if evidence.file_size %}
+
+                                            {{ "%.2f"|format(
+                                                evidence.file_size / 1024
+                                            ) }}
+
+                                            KB
+
+                                        {% else %}
+
+                                            N/A
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- STATUS -->
+
+                                    <td>
+
+                                        {% if evidence.status == "Uploaded" %}
+
+                                            <span class="badge bg-success">
+                                                Uploaded
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge bg-secondary">
+                                                {{ evidence.status }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- ACTION -->
+
+                                    <td>
+
+                                        <a
+                                            href="{{ url_for(
+                                                'email.analyze',
+                                                evidence_id=evidence.id
+                                            ) }}"
+                                            class="btn btn-success btn-sm"
+                                        >
+
+                                            🔍 Analyze Email
+
+                                        </a>
+
+                                    </td>
+
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+            {% else %}
+
+                <!-- ================================= -->
+                <!-- NO EMAIL EVIDENCE -->
+                <!-- ================================= -->
+
+                <div class="text-center py-5">
+
+                    <div class="fs-1">
+                        📧
+                    </div>
+
+
+                    <h5 class="fw-bold mt-3">
+                        No Email Evidence Found
+                    </h5>
+
+
+                    <p class="text-muted">
+
+                        No <strong>.eml</strong> email evidence has been
+                        uploaded yet.
+
+                    </p>
+
+
+                    <p class="text-muted">
+
+                        Go to the case and upload the email through
+                        <strong>Evidence Management</strong>.
+
+                    </p>
+
+
+                    <a
+                        href="{{ url_for('cases.dashboard') }}"
+                        class="btn btn-primary mt-2"
+                    >
+
+                        Go to Cases
+
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+
+        </div>
+
+    </div>
 
 
 </div>
 
 
 </body>
-
 
 </html>

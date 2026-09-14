@@ -100,6 +100,17 @@ def create_app():
 
 
     # ==========================
+    # Risk Engine Module
+    # ==========================
+
+    from app.risk_engine import risk_engine
+
+    app.register_blueprint(
+        risk_engine
+    )
+
+
+    # ==========================
     # Final Reports Module
     # ==========================
 

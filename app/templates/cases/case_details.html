@@ -1,165 +1,551 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-<title>Case Details</title>
+    <meta charset="UTF-8">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Case Details | ForensiCore</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet">
 
 </head>
 
+
 <body>
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
 
-<h2>{{ case.case_title }}</h2>
 
-<hr>
+    <!-- ===================================== -->
+    <!-- PAGE HEADER -->
+    <!-- ===================================== -->
 
-<div class="card p-4 mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
 
-<h5>Case Information</h5>
+        <div>
 
-<p><b>Case Number :</b> {{ case.case_number }}</p>
+            <h2 class="fw-bold mb-1">
+                {{ case.case_title }}
+            </h2>
 
-<p><b>Investigator :</b> {{ case.investigator_name }}</p>
+            <p class="text-muted mb-0">
+                {{ case.case_number }}
+            </p>
 
-<p><b>Status :</b> {{ case.status }}</p>
+        </div>
 
-<p><b>Date :</b> {{ case.investigation_date }}</p>
 
-<p><b>Summary :</b></p>
+        <a
+            href="{{ url_for('cases.dashboard') }}"
+            class="btn btn-outline-secondary"
+        >
+            ← Dashboard
+        </a>
 
-<p>{{ case.case_summary }}</p>
+    </div>
+
+
+    <!-- ===================================== -->
+    <!-- CASE INFORMATION -->
+    <!-- ===================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white">
+
+            <h5 class="mb-0">
+                Case Information
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <div class="row">
+
+
+                <div class="col-md-6 mb-3">
+
+                    <strong>
+                        Case Number
+                    </strong>
+
+                    <p class="text-muted mb-0">
+                        {{ case.case_number }}
+                    </p>
+
+                </div>
+
+
+                <div class="col-md-6 mb-3">
+
+                    <strong>
+                        Case Title
+                    </strong>
+
+                    <p class="text-muted mb-0">
+                        {{ case.case_title }}
+                    </p>
+
+                </div>
+
+
+                <div class="col-md-6 mb-3">
+
+                    <strong>
+                        Investigator
+                    </strong>
+
+                    <p class="text-muted mb-0">
+                        {{ case.investigator_name }}
+                    </p>
+
+                </div>
+
+
+                <div class="col-md-6 mb-3">
+
+                    <strong>
+                        Status
+                    </strong>
+
+                    <p class="text-muted mb-0">
+                        {{ case.status }}
+                    </p>
+
+                </div>
+
+
+                <div class="col-md-6 mb-3">
+
+                    <strong>
+                        Investigation Date
+                    </strong>
+
+                    <p class="text-muted mb-0">
+                        {{ case.investigation_date }}
+                    </p>
+
+                </div>
+
+
+                <div class="col-md-12">
+
+                    <strong>
+                        Case Summary
+                    </strong>
+
+                    <p class="text-muted mt-2 mb-0">
+                        {{ case.case_summary }}
+                    </p>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================== -->
+    <!-- EVIDENCE MANAGEMENT -->
+    <!-- ===================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-primary text-white">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <h5 class="mb-0">
+                    Evidence Management
+                </h5>
+
+
+                <a
+                    href="{{ url_for(
+                        'cases.add_evidence',
+                        case_id=case.id
+                    ) }}"
+                    class="btn btn-light btn-sm"
+                >
+                    + Add Evidence
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body">
+
+
+            {% if evidence_list %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    ID
+                                </th>
+
+                                <th>
+                                    Evidence File
+                                </th>
+
+                                <th>
+                                    File Type
+                                </th>
+
+                                <th>
+                                    Size
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th>
+                                    Uploaded
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for evidence in evidence_list %}
+
+                                <tr>
+
+                                    <td>
+                                        #{{ evidence.id }}
+                                    </td>
+
+
+                                    <td>
+
+                                        <strong>
+                                            {{ evidence.original_filename }}
+                                        </strong>
+
+                                        <br>
+
+                                        <small class="text-muted">
+
+                                            Stored:
+                                            {{ evidence.stored_filename }}
+
+                                        </small>
+
+                                    </td>
+
+
+                                    <td>
+                                        {{ evidence.file_type }}
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if evidence.file_size %}
+
+                                            {{ "%.2f"|format(
+                                                evidence.file_size / 1024
+                                            ) }}
+                                            KB
+
+                                        {% else %}
+
+                                            N/A
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if evidence.status == "Uploaded" %}
+
+                                            <span class="badge bg-success">
+                                                Uploaded
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge bg-secondary">
+                                                {{ evidence.status }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if evidence.uploaded_at %}
+
+                                            {{ evidence.uploaded_at.strftime(
+                                                "%d-%m-%Y %H:%M"
+                                            ) }}
+
+                                        {% else %}
+
+                                            N/A
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+            {% else %}
+
+                <div class="text-center py-4">
+
+                    <div class="fs-1">
+                        📁
+                    </div>
+
+                    <h6 class="fw-bold mt-2">
+                        No Evidence Added
+                    </h6>
+
+                    <p class="text-muted mb-3">
+                        No digital evidence has been uploaded
+                        to this case yet.
+                    </p>
+
+
+                    <a
+                        href="{{ url_for(
+                            'cases.add_evidence',
+                            case_id=case.id
+                        ) }}"
+                        class="btn btn-primary"
+                    >
+                        Add First Evidence
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================== -->
+    <!-- ANALYSIS MODULES -->
+    <!-- ===================================== -->
+
+    <h4 class="fw-bold mb-3">
+        Forensic Analysis Modules
+    </h4>
+
+
+    <div class="row">
+
+
+        <!-- ================================= -->
+        <!-- METADATA ANALYZER -->
+        <!-- ================================= -->
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm p-4 mb-4">
+
+                <h5>
+                    📷 Metadata Analyzer
+                </h5>
+
+
+                <p class="text-muted">
+
+                    Analyze image metadata including
+                    EXIF, camera information, timestamps,
+                    GPS and software information.
+
+                </p>
+
+
+                <a
+                    href="{{ url_for('metadata.upload') }}"
+                    class="btn btn-primary"
+                >
+                    Open Module
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- EMAIL ANALYZER -->
+        <!-- ================================= -->
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm p-4 mb-4">
+
+                <h5>
+                    📧 Email Header Analyzer
+                </h5>
+
+
+                <p class="text-muted">
+
+                    Analyze email headers, sender information,
+                    SPF, DKIM, DMARC and spoofing indicators.
+
+                </p>
+
+
+             <a
+    href="{{ url_for('email.upload') }}?case_id={{ case.id }}"
+    class="btn btn-success"
+>
+    Open Module
+</a>   
+            </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- BROWSER ANALYZER -->
+        <!-- ================================= -->
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm p-4 mb-4">
+
+                <h5>
+                    🌐 Browser History Analyzer
+                </h5>
+
+
+                <p class="text-muted">
+
+                    Analyze browser history, visited URLs,
+                    timestamps and suspicious browsing patterns.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="btn btn-warning"
+                >
+                    Open Module
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- RISK ASSESSMENT -->
+        <!-- ================================= -->
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm p-4 mb-4">
+
+                <h5>
+                    ⚠️ Risk Assessment
+                </h5>
+
+
+                <p class="text-muted">
+
+                    Combine forensic analysis results and
+                    calculate the overall risk level.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="btn btn-danger"
+                >
+                    Open Module
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- FORENSIC REPORT -->
+        <!-- ================================= -->
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm p-4 mb-4">
+
+                <h5>
+                    📄 Generate Forensic Report
+                </h5>
+
+
+                <p class="text-muted">
+
+                    Generate a complete forensic investigation
+                    report containing case and analysis results.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="btn btn-secondary"
+                >
+                    Generate PDF
+                </a>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
 
 </div>
 
-
-
-<div class="row">
-
-<div class="col-md-6">
-
-<div class="card p-4 mb-4">
-
-<h5>🔐 File Hash Generator</h5>
-
-<p>Generate MD5 & SHA-256 hashes.</p>
-
-<a href="#" class="btn btn-dark">
-
-Open Module
-
-</a>
-
-</div>
-
-</div>
-
-
-
-<div class="col-md-6">
-
-<div class="card p-4 mb-4">
-
-<h5>📷 Metadata Analyzer</h5>
-
-<p>Analyze image and document metadata.</p>
-
-<a href="#" class="btn btn-primary">
-
-Open Module
-
-</a>
-
-</div>
-
-</div>
-
-
-
-<div class="col-md-6">
-
-<div class="card p-4 mb-4">
-
-<h5>📧 Email Header Analyzer</h5>
-
-<p>Analyze email headers and spoofing.</p>
-
-<a href="#" class="btn btn-success">
-
-Open Module
-
-</a>
-
-</div>
-
-</div>
-
-
-
-<div class="col-md-6">
-
-<div class="card p-4 mb-4">
-
-<h5>🌐 Browser History Analyzer</h5>
-
-<p>Analyze browser history database.</p>
-
-<a href="#" class="btn btn-warning">
-
-Open Module
-
-</a>
-
-</div>
-
-</div>
-
-
-
-<div class="col-md-6">
-
-<div class="card p-4 mb-4">
-
-<h5>⚠ Risk Assessment</h5>
-
-<p>Calculate overall forensic risk.</p>
-
-<a href="#" class="btn btn-danger">
-
-Open Module
-
-</a>
-
-</div>
-
-</div>
-
-
-
-<div class="col-md-6">
-
-<div class="card p-4 mb-4">
-
-<h5>📄 Generate Report</h5>
-
-<p>Create complete forensic PDF report.</p>
-
-<a href="#" class="btn btn-secondary">
-
-Generate PDF
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
 
 </body>
 

@@ -1,48 +1,145 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
+{% block content %}
 
-    <title>Metadata Analyzer</title>
+<div class="container mt-4">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Metadata Analyzer</h2>
+            <p class="text-muted mb-0">
+                Select an existing image evidence for forensic metadata analysis.
+            </p>
+        </div>
 
-</head>
+        <a href="{{ url_for('cases.dashboard') }}"
+           class="btn btn-outline-secondary">
+            ← Dashboard
+        </a>
+    </div>
 
-<body>
 
-<div class="container mt-5">
+    <!-- Information -->
+    <div class="alert alert-info">
+        <strong>Forensic Workflow:</strong>
+        Evidence is uploaded once through Evidence Management.
+        Metadata Analyzer uses the stored evidence file directly.
+        No second upload is required.
+    </div>
 
-    <h2>Metadata Analyzer</h2>
 
-    <hr>
+    <!-- Evidence List -->
+    <div class="card shadow-sm">
 
-    <form action="/metadata/analyze" method="POST" enctype="multipart/form-data">
+        <div class="card-header">
+            <h5 class="mb-0">Available Image Evidence</h5>
+        </div>
 
-        <div class="mb-3">
+        <div class="card-body">
 
-            <label class="form-label">
-                Select Evidence File
-            </label>
+            {% if evidence_list %}
 
-            <input
-                type="file"
-                name="evidence"
-                class="form-control"
-                required>
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover align-middle">
+
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>File Name</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% set image_found = false %}
+
+                        {% for evidence in evidence_list %}
+
+                            {% set extension =
+                                evidence.original_filename.rsplit('.', 1)[-1].lower()
+                                if '.' in evidence.original_filename else ''
+                            %}
+
+                            {% if extension in ['jpg', 'jpeg', 'png', 'tif', 'tiff'] %}
+
+                                {% set image_found = true %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ evidence.id }}
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            {{ evidence.original_filename }}
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        {{ evidence.file_type or 'Image' }}
+                                    </td>
+
+                                    <td>
+                                        {{ "%.2f"|format((evidence.file_size or 0) / 1024) }}
+                                        KB
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-success">
+                                            {{ evidence.status }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+
+                                        <a href="{{ url_for(
+                                            'metadata.analyze',
+                                            evidence_id=evidence.id
+                                        ) }}"
+                                           class="btn btn-primary btn-sm">
+
+                                            🔍 Analyze Metadata
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <div class="text-center py-5">
+
+                    <h5>No Evidence Available</h5>
+
+                    <p class="text-muted">
+                        Upload an evidence file through Case → Evidence Management.
+                    </p>
+
+                </div>
+
+            {% endif %}
 
         </div>
 
-        <button class="btn btn-primary">
-
-            Analyze Metadata
-
-        </button>
-
-    </form>
+    </div>
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}
