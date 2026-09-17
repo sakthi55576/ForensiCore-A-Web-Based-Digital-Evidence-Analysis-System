@@ -1,11 +1,12 @@
 import sqlite3
-
 from datetime import datetime
-
 import hashlib
-
 import re
 
+
+# ==========================================
+# CHROME / EDGE TIMESTAMP CONVERSION
+# ==========================================
 
 def convert_chrome_time(chrome_time):
 
@@ -23,10 +24,14 @@ def convert_chrome_time(chrome_time):
             "%Y-%m-%d %H:%M:%S"
         )
 
-    except:
+    except Exception:
 
         return "Unknown"
 
+
+# ==========================================
+# EXTRACT BROWSER HISTORY
+# ==========================================
 
 def extract_history(history_file):
 
@@ -38,6 +43,8 @@ def extract_history(history_file):
 
     }
 
+    connection = None
+
     try:
 
         connection = sqlite3.connect(
@@ -48,10 +55,13 @@ def extract_history(history_file):
 
         print("Database Connected")
 
+        # --------------------------------------
         # Check available tables
+        # --------------------------------------
 
         cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
+            "SELECT name FROM sqlite_master "
+            "WHERE type='table'"
         )
 
         tables = cursor.fetchall()
@@ -61,7 +71,9 @@ def extract_history(history_file):
             tables
         )
 
+        # --------------------------------------
         # Count URL records
+        # --------------------------------------
 
         cursor.execute(
             "SELECT COUNT(*) FROM urls"
@@ -74,16 +86,17 @@ def extract_history(history_file):
             count
         )
 
+        # --------------------------------------
+        # Extract browser history
+        # --------------------------------------
+
         query = """
 
         SELECT
 
         url,
-
         title,
-
         visit_count,
-
         last_visit_time
 
         FROM urls
@@ -103,27 +116,34 @@ def extract_history(history_file):
             len(rows)
         )
 
+        # --------------------------------------
+        # Process records
+        # --------------------------------------
+
         for row in rows:
 
             result["History"].append({
 
                 "URL": row[0],
 
-                "Title": row[1]
-                if row[1]
-                else "No Title",
+                "Title":
+                    row[1]
+                    if row[1]
+                    else "No Title",
 
-                "Visit Count": row[2],
+                "Visit Count":
+                    row[2]
+                    if row[2] is not None
+                    else 0,
 
-                "Last Visit": convert_chrome_time(
-                    row[3]
-                )
+                "Last Visit":
+                    convert_chrome_time(
+                        row[3]
+                    )
 
             })
 
         result["Total URLs"] = len(rows)
-
-        connection.close()
 
     except Exception as e:
 
@@ -132,18 +152,42 @@ def extract_history(history_file):
             e
         )
 
+        result["Error"] = str(e)
+
+    finally:
+
+        if connection:
+
+            connection.close()
+
     return result
 
 
-def get_top_websites(history_data, limit=10):
+# ==========================================
+# TOP VISITED WEBSITES
+# ==========================================
+
+def get_top_websites(
+    history_data,
+    limit=10
+):
 
     websites = []
 
-    for item in history_data["History"]:
+    for item in history_data.get(
+        "History",
+        []
+    ):
 
-        url = item["URL"]
+        url = item.get(
+            "URL",
+            ""
+        )
 
-        visits = item["Visit Count"]
+        visits = item.get(
+            "Visit Count",
+            0
+        )
 
         websites.append({
 
@@ -157,7 +201,8 @@ def get_top_websites(history_data, limit=10):
 
         websites,
 
-        key=lambda x: x["Visit Count"],
+        key=lambda x:
+            x["Visit Count"],
 
         reverse=True
 
@@ -166,21 +211,46 @@ def get_top_websites(history_data, limit=10):
     return websites[:limit]
 
 
-def get_browsing_timeline(history_data):
+# ==========================================
+# BROWSING TIMELINE
+# ==========================================
+
+def get_browsing_timeline(
+    history_data
+):
 
     timeline = []
 
-    for item in history_data["History"]:
+    for item in history_data.get(
+        "History",
+        []
+    ):
 
         timeline.append({
 
-            "URL": item["URL"],
+            "URL":
+                item.get(
+                    "URL",
+                    ""
+                ),
 
-            "Title": item["Title"],
+            "Title":
+                item.get(
+                    "Title",
+                    "No Title"
+                ),
 
-            "Visit Count": item["Visit Count"],
+            "Visit Count":
+                item.get(
+                    "Visit Count",
+                    0
+                ),
 
-            "Last Visit": item["Last Visit"]
+            "Last Visit":
+                item.get(
+                    "Last Visit",
+                    "Unknown"
+                )
 
         })
 
@@ -188,14 +258,21 @@ def get_browsing_timeline(history_data):
 
         timeline,
 
-        key=lambda x: x["Last Visit"]
+        key=lambda x:
+            x["Last Visit"]
 
     )
 
     return timeline
 
 
-def generate_file_hash(file_path):
+# ==========================================
+# GENERATE SHA-256 HASH
+# ==========================================
+
+def generate_file_hash(
+    file_path
+):
 
     sha256_hash = hashlib.sha256()
 
@@ -208,9 +285,12 @@ def generate_file_hash(file_path):
 
             while True:
 
-                chunk = file.read(4096)
+                chunk = file.read(
+                    4096
+                )
 
                 if not chunk:
+
                     break
 
                 sha256_hash.update(
@@ -229,64 +309,74 @@ def generate_file_hash(file_path):
         return "Hash Generation Failed"
 
 
-def analyze_browser_risk(history_data):
+# ==========================================
+# BROWSER RISK ASSESSMENT
+# ==========================================
+
+def analyze_browser_risk(
+    history_data
+):
 
     risk_score = 0
+
     findings = []
 
+    risk_breakdown = []
+
     http_count = 0
+
     ip_url_count = 0
+
     high_visit_count = 0
 
-    suspicious_keywords = [
-        "phishing",
-        "malware",
-        "ransomware",
-        "hack",
-        "exploit",
-        "botnet",
-        "keylogger",
-        "trojan",
-        "payload",
-        "crack"
-    ]
-
-    suspicious_url_count = 0
+    history = history_data.get(
+        "History",
+        []
+    )
 
 
-    # ==========================================
+    # ======================================
     # ANALYZE BROWSER HISTORY
-    # ==========================================
+    # ======================================
 
-    for item in history_data.get("History", []):
+    for item in history:
 
         url = str(
-            item.get("URL", "")
+            item.get(
+                "URL",
+                ""
+            )
         )
 
         visit_count = int(
-            item.get("Visit Count", 0)
+            item.get(
+                "Visit Count",
+                0
+            )
         )
 
         url_lower = url.lower()
 
 
-        # ======================================
+        # ----------------------------------
         # 1. HTTP URL DETECTION
-        # ======================================
+        # ----------------------------------
 
-        if url_lower.startswith("http://"):
+        if url_lower.startswith(
+            "http://"
+        ):
 
             http_count += 1
 
 
-        # ======================================
+        # ----------------------------------
         # 2. IP ADDRESS URL DETECTION
-        # ======================================
+        # ----------------------------------
 
         ip_pattern = (
             r"https?://"
-            r"(?:\d{1,3}\.){3}\d{1,3}"
+            r"(?:\d{1,3}\.){3}"
+            r"\d{1,3}"
         )
 
         if re.search(
@@ -298,117 +388,192 @@ def analyze_browser_risk(history_data):
             ip_url_count += 1
 
 
-        # ======================================
+        # ----------------------------------
         # 3. HIGH VISIT FREQUENCY
-        # ======================================
+        # ----------------------------------
 
         if visit_count >= 50:
 
             high_visit_count += 1
 
 
-        # ======================================
-        # 4. SUSPICIOUS KEYWORD DETECTION
-        # ======================================
-
-        keyword_found = False
-
-        for keyword in suspicious_keywords:
-
-            if keyword in url_lower:
-
-                keyword_found = True
-                break
-
-
-        if keyword_found:
-
-            suspicious_url_count += 1
-
-
-    # ==========================================
+    # ======================================
     # RISK SCORING
-    # ==========================================
+    # ======================================
 
-    # ------------------------------------------
-    # HTTP activity
-    # ------------------------------------------
+    # --------------------------------------
+    # HTTP Activity
+    # --------------------------------------
 
     if http_count > 0:
 
-        risk_score += min(
+        http_score = min(
             http_count * 2,
             10
         )
 
+        risk_score += http_score
+
+        risk_breakdown.append({
+
+            "Factor":
+                "HTTP URL Activity",
+
+            "Score":
+                http_score,
+
+            "Maximum":
+                10,
+
+            "Observation":
+                f"{http_count} HTTP URL(s) detected."
+
+        })
+
         findings.append(
-            f"HTTP URLs detected: {http_count}"
+            f"HTTP URLs detected: "
+            f"{http_count}"
         )
 
+    else:
 
-    # ------------------------------------------
-    # IP-based URLs
-    # ------------------------------------------
+        risk_breakdown.append({
+
+            "Factor":
+                "HTTP URL Activity",
+
+            "Score":
+                0,
+
+            "Maximum":
+                10,
+
+            "Observation":
+                "No HTTP URLs detected."
+
+        })
+
+
+    # --------------------------------------
+    # IP-Based URLs
+    # --------------------------------------
 
     if ip_url_count > 0:
 
-        risk_score += min(
+        ip_score = min(
             ip_url_count * 5,
             25
         )
+
+        risk_score += ip_score
+
+        risk_breakdown.append({
+
+            "Factor":
+                "IP-Address URL Activity",
+
+            "Score":
+                ip_score,
+
+            "Maximum":
+                25,
+
+            "Observation":
+                f"{ip_url_count} IP-address-based "
+                f"URL(s) detected."
+
+        })
 
         findings.append(
             f"IP-address based URLs detected: "
             f"{ip_url_count}"
         )
 
+    else:
 
-    # ------------------------------------------
-    # High-frequency browsing
-    # ------------------------------------------
+        risk_breakdown.append({
+
+            "Factor":
+                "IP-Address URL Activity",
+
+            "Score":
+                0,
+
+            "Maximum":
+                25,
+
+            "Observation":
+                "No IP-address-based URLs detected."
+
+        })
+
+
+    # --------------------------------------
+    # High-Frequency Browsing
+    # --------------------------------------
 
     if high_visit_count > 0:
 
-        risk_score += min(
+        frequency_score = min(
             high_visit_count * 3,
             15
         )
+
+        risk_score += frequency_score
+
+        risk_breakdown.append({
+
+            "Factor":
+                "High-Frequency Browsing",
+
+            "Score":
+                frequency_score,
+
+            "Maximum":
+                15,
+
+            "Observation":
+                f"{high_visit_count} URL(s) "
+                f"with 50 or more visits detected."
+
+        })
 
         findings.append(
             f"High-frequency visited URLs detected: "
             f"{high_visit_count}"
         )
 
+    else:
 
-    # ------------------------------------------
-    # Suspicious keywords
-    # ------------------------------------------
+        risk_breakdown.append({
 
-    if suspicious_url_count > 0:
+            "Factor":
+                "High-Frequency Browsing",
 
-        risk_score += min(
-            suspicious_url_count * 10,
-            30
-        )
+            "Score":
+                0,
 
-        findings.append(
-            f"URLs containing suspicious security-related "
-            f"keywords detected: {suspicious_url_count}"
-        )
+            "Maximum":
+                15,
+
+            "Observation":
+                "No high-frequency browsing pattern detected."
+
+        })
 
 
-    # ==========================================
-    # LIMIT SCORE
-    # ==========================================
+    # ======================================
+    # TOTAL SCORE
+    # ======================================
 
     if risk_score > 100:
 
         risk_score = 100
 
 
-    # ==========================================
+    # ======================================
     # RISK LEVEL
-    # ==========================================
+    # ======================================
 
     if risk_score >= 70:
 
@@ -423,27 +588,54 @@ def analyze_browser_risk(history_data):
         risk_level = "LOW"
 
 
-    # ==========================================
+    # ======================================
     # NO FINDINGS
-    # ==========================================
+    # ======================================
 
     if not findings:
 
         findings.append(
-            "No significant browser risk indicators detected."
+            "No significant browser-history "
+            "risk indicators detected."
         )
 
 
-    # ==========================================
+    # ======================================
+    # FORENSIC INTERPRETATION
+    # ======================================
+
+    interpretation = (
+        "The browser risk score represents "
+        "observable indicators identified "
+        "from the available browser-history "
+        "records. The presence of HTTP URLs, "
+        "IP-address-based URLs, or frequent "
+        "visits does not by itself prove "
+        "malicious activity. Further forensic "
+        "examination may be required to "
+        "establish context."
+    )
+
+
+    # ======================================
     # RETURN RESULT
-    # ==========================================
+    # ======================================
 
     return {
 
-        "Risk Score": risk_score,
+        "Risk Score":
+            risk_score,
 
-        "Risk Level": risk_level,
+        "Risk Level":
+            risk_level,
 
-        "Findings": findings
+        "Risk Breakdown":
+            risk_breakdown,
+
+        "Findings":
+            findings,
+
+        "Forensic Interpretation":
+            interpretation
 
     }

@@ -1,73 +1,353 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-<title>Browser History Analyzer</title>
+    <meta charset="UTF-8">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Browser History Analyzer</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
 </head>
 
 
 <body>
 
-
 <div class="container mt-5">
 
+    <!-- ==========================================
+         PAGE HEADER
+         ========================================== -->
 
-<h2>
-Browser History Analyzer
-</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <div>
+
+            <h2 class="mb-1">
+                Browser History Analyzer
+            </h2>
+
+            <p class="text-muted mb-0">
+                Analyze browser history evidence for forensic investigation.
+            </p>
+
+        </div>
+
+        <a
+            href="{{ url_for('cases.dashboard') }}"
+            class="btn btn-secondary"
+        >
+            ← Dashboard
+        </a>
+
+    </div>
+
+    <hr>
 
 
-<hr>
+    <!-- ==========================================
+         INFORMATION
+         ========================================== -->
+
+    <div class="alert alert-info">
+
+        <strong>Evidence-Based Analysis</strong>
+
+        <br>
+
+        Browser history files should be uploaded through
+        <strong>Case → Evidence Management</strong>.
+
+        The Browser History Analyzer does not create a
+        second copy of the evidence.
+
+    </div>
 
 
-<div class="alert alert-info">
+    {% if case_id %}
 
-Upload Chrome / Edge History database file for forensic analysis.
+    <div class="alert alert-primary">
+
+        Showing browser history evidence for
+        <strong>Case ID: {{ case_id }}</strong>.
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==========================================
+         AVAILABLE EVIDENCE
+         ========================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-dark text-white">
+
+            <h5 class="mb-0">
+                Available Browser Evidence
+            </h5>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            {% if evidence_list %}
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Evidence ID
+                            </th>
+
+                            <th>
+                                Case ID
+                            </th>
+
+                            <th>
+                                Evidence File
+                            </th>
+
+                            <th>
+                                File Type
+                            </th>
+
+                            <th>
+                                File Size
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Action
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    {% for evidence in evidence_list %}
+
+                        <tr>
+
+                            <td>
+                                {{ evidence.id }}
+                            </td>
+
+                            <td>
+                                {{ evidence.case_id }}
+                            </td>
+
+                            <td>
+
+                                <strong>
+                                    {{ evidence.original_filename }}
+                                </strong>
+
+                                <br>
+
+                                <small class="text-muted">
+
+                                    Stored as:
+                                    {{ evidence.stored_filename }}
+
+                                </small>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ evidence.file_type
+                                   or "Unknown" }}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if evidence.file_size %}
+
+                                    {{ "%.2f"|format(
+                                        evidence.file_size / 1024
+                                    ) }}
+                                    KB
+
+                                {% else %}
+
+                                    N/A
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="badge bg-success">
+
+                                    {{ evidence.status
+                                       or "Uploaded" }}
+
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'browser.analyze',
+                                        evidence_id=evidence.id
+                                    ) }}"
+                                    class="btn btn-primary btn-sm"
+                                >
+                                    🔍 Analyze
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <!-- ======================================
+                 NO EVIDENCE
+                 ====================================== -->
+
+            <div class="p-4 text-center">
+
+                <h5 class="text-muted">
+                    No Browser History Evidence Found
+                </h5>
+
+                <p class="text-muted">
+
+                    Upload a Chrome or Edge browser history
+                    database through the Case's
+                    <strong>Evidence Management</strong> section.
+
+                </p>
+
+
+                {% if case_id %}
+
+                <a
+                    href="{{ url_for(
+                        'cases.case_details',
+                        case_id=case_id
+                    ) }}"
+                    class="btn btn-primary"
+                >
+                    ← Back to Case
+                </a>
+
+                {% else %}
+
+                <a
+                    href="{{ url_for('cases.dashboard') }}"
+                    class="btn btn-primary"
+                >
+                    ← Back to Dashboard
+                </a>
+
+                {% endif %}
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         SUPPORTED FILE TYPES
+         ========================================== -->
+
+    <div class="card mt-4">
+
+        <div class="card-body">
+
+            <h5>
+                Supported Evidence Types
+            </h5>
+
+            <ul class="mb-0">
+
+                <li>
+                    Chrome History Database
+                    <code>.db</code>
+                </li>
+
+                <li>
+                    SQLite Browser History
+                    <code>.sqlite</code>
+                </li>
+
+                <li>
+                    SQLite3 Browser History
+                    <code>.sqlite3</code>
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         FORENSIC NOTE
+         ========================================== -->
+
+    <div class="alert alert-warning mt-4">
+
+        <strong>Forensic Note:</strong>
+
+        Browser history indicators such as HTTP usage,
+        IP-address-based URLs, and high-frequency visits
+        are treated as investigative indicators.
+
+        They do not independently prove malicious activity.
+
+    </div>
 
 </div>
 
 
-
-<form method="POST" 
-      action="/browser/analyze"
-      enctype="multipart/form-data">
-
-
-<label class="form-label">
-
-Select Browser History File
-
-</label>
-
-
-<input 
-type="file"
-name="history_file"
-class="form-control"
-required>
-
-
-
-<br>
-
-
-<button class="btn btn-primary">
-
-Analyze Browser History
-
-</button>
-
-
-
-</form>
-
-
-</div>
-
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+</script>
 
 </body>
 

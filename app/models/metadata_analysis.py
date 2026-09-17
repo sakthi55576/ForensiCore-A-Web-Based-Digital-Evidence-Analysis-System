@@ -44,6 +44,12 @@ class MetadataAnalysis(db.Model):
     )
 
 
+    risk_score = db.Column(
+        db.Integer,
+        default=0
+    )
+
+
     observations = db.Column(
         db.Text
     )

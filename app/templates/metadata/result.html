@@ -967,27 +967,35 @@
     <!-- FOOTER ACTIONS -->
     <!-- ===================================== -->
 
-    <div class="d-flex justify-content-between">
+<!-- ========================================= -->
+<!-- FINAL ACTION BUTTONS -->
+<!-- ========================================= -->
 
-        <a href="{{ url_for('cases.dashboard') }}"
-           class="btn btn-outline-secondary">
+<div class="d-flex justify-content-between align-items-center mt-4 mb-5">
 
-            Dashboard
+    <!-- Dashboard -->
+    <a href="{{ url_for('cases.dashboard') }}"
+       class="btn btn-outline-secondary">
+        Dashboard
+    </a>
 
+    <div>
+
+        <!-- Back to Case -->
+        <a href="{{ url_for('cases.case_details', case_id=evidence.case_id) }}"
+           class="btn btn-dark me-2">
+            ← Back to Case
         </a>
 
-
+        <!-- Analyze Another Evidence -->
         <a href="{{ url_for('metadata.upload') }}"
            class="btn btn-primary">
-
             Analyze Another Evidence
-
         </a>
 
     </div>
 
 </div>
-
 
 <!-- ========================================= -->
 <!-- RISK BAR JAVASCRIPT -->

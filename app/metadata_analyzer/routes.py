@@ -3,6 +3,7 @@ import json
 
 from flask import (
     render_template,
+    request,
     session,
     redirect,
     url_for,
@@ -11,6 +12,7 @@ from flask import (
 
 from app import db
 from app.models.evidence import Evidence
+from app.models.case import Case
 from app.models.metadata_analysis import MetadataAnalysis
 
 from . import metadata
@@ -87,15 +89,70 @@ def upload():
             url_for("auth.login")
         )
 
+    # --------------------------------------
+    # Optional Case ID
+    # --------------------------------------
+
+    case_id = request.args.get(
+        "case_id",
+        type=int
+    )
 
     # --------------------------------------
-    # Get all evidence
+    # If Case ID is supplied,
+    # verify that the case belongs
+    # to the logged-in investigator.
     # --------------------------------------
 
-    all_evidence = Evidence.query.order_by(
-        Evidence.id.desc()
-    ).all()
+    if case_id:
 
+        case = (
+            Case.query
+            .filter_by(
+                id=case_id,
+                user_id=session["user_id"]
+            )
+            .first_or_404()
+        )
+
+        # ----------------------------------
+        # Get evidence ONLY from this case
+        # ----------------------------------
+
+        all_evidence = (
+            Evidence.query
+            .filter_by(
+                case_id=case.id
+            )
+            .order_by(
+                Evidence.id.desc()
+            )
+            .all()
+        )
+
+    else:
+
+        # ----------------------------------
+        # No case selected.
+        #
+        # Show ONLY evidence belonging to
+        # the logged-in investigator.
+        # ----------------------------------
+
+        all_evidence = (
+            Evidence.query
+            .join(
+                Case,
+                Evidence.case_id == Case.id
+            )
+            .filter(
+                Case.user_id == session["user_id"]
+            )
+            .order_by(
+                Evidence.id.desc()
+            )
+            .all()
+        )
 
     # --------------------------------------
     # Filter image evidence only
@@ -115,14 +172,14 @@ def upload():
                 evidence
             )
 
-
     # --------------------------------------
     # Display evidence selection page
     # --------------------------------------
 
     return render_template(
         "metadata/upload.html",
-        evidence_list=image_evidence
+        evidence_list=image_evidence,
+        case_id=case_id
     )
 
 
@@ -146,15 +203,25 @@ def analyze(evidence_id):
             url_for("auth.login")
         )
 
-
     # --------------------------------------
-    # Get evidence record
+    # IMPORTANT SECURITY CHECK
+    #
+    # Get evidence ONLY if its parent case
+    # belongs to the logged-in investigator.
     # --------------------------------------
 
-    evidence = Evidence.query.get_or_404(
-        evidence_id
+    evidence = (
+        Evidence.query
+        .join(
+            Case,
+            Evidence.case_id == Case.id
+        )
+        .filter(
+            Evidence.id == evidence_id,
+            Case.user_id == session["user_id"]
+        )
+        .first_or_404()
     )
-
 
     # --------------------------------------
     # Verify image evidence
@@ -172,9 +239,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     # --------------------------------------
     # Get stored evidence file
@@ -184,7 +253,6 @@ def analyze(evidence_id):
         EVIDENCE_UPLOAD_FOLDER,
         evidence.stored_filename
     )
-
 
     # --------------------------------------
     # Check stored file
@@ -198,9 +266,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     # ======================================
     # VALIDATE IMAGE
@@ -208,8 +278,10 @@ def analyze(evidence_id):
 
     try:
 
-        is_valid, validation_message = validate_image_file(
-            file_path
+        is_valid, validation_message = (
+            validate_image_file(
+                file_path
+            )
         )
 
     except Exception as e:
@@ -220,9 +292,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     if not is_valid:
 
@@ -232,9 +306,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     # ======================================
     # HASH GENERATION
@@ -254,9 +330,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     # ======================================
     # METADATA EXTRACTION
@@ -276,9 +354,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     # ======================================
     # FILE INFORMATION
@@ -298,9 +378,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     # ======================================
     # FORENSIC OBSERVATIONS
@@ -317,7 +399,6 @@ def analyze(evidence_id):
         observations = [
             f"Observation generation error: {str(e)}"
         ]
-
 
     # ======================================
     # METADATA RISK ANALYSIS
@@ -345,7 +426,6 @@ def analyze(evidence_id):
 
         }
 
-
     # ======================================
     # RISK SCORE
     # ======================================
@@ -354,7 +434,6 @@ def analyze(evidence_id):
         "score",
         0
     )
-
 
     # ======================================
     # RISK LEVEL
@@ -365,7 +444,6 @@ def analyze(evidence_id):
         "LOW"
     )
 
-
     # ======================================
     # RISK INDICATORS
     # ======================================
@@ -374,7 +452,6 @@ def analyze(evidence_id):
         "reasons",
         []
     )
-
 
     # ======================================
     # RISK BREAKDOWN
@@ -385,7 +462,6 @@ def analyze(evidence_id):
         []
     )
 
-
     # ======================================
     # JSON SAFE DATA
     # ======================================
@@ -394,31 +470,25 @@ def analyze(evidence_id):
         metadata_data
     )
 
-
     safe_hashes = make_json_safe(
         hashes
     )
-
 
     safe_file_info = make_json_safe(
         file_info
     )
 
-
     safe_observations = make_json_safe(
         observations
     )
-
 
     safe_risk_reasons = make_json_safe(
         risk_reasons
     )
 
-
     safe_risk_breakdown = make_json_safe(
         risk_breakdown
     )
-
 
     # ======================================
     # SAVE DATABASE RECORD
@@ -448,12 +518,14 @@ def analyze(evidence_id):
 
             risk_level=risk_level,
 
+            # Save actual Metadata Analyzer score
+            risk_score=risk_score,
+
             observations=json.dumps(
                 safe_observations
             )
 
         )
-
 
         db.session.add(
             analysis
@@ -461,10 +533,55 @@ def analyze(evidence_id):
 
         db.session.commit()
 
+        # ----------------------------------
+        # Debug information
+        # ----------------------------------
+
+        print(
+            "\n=========================================="
+        )
+
+        print(
+            "METADATA ANALYSIS SAVED TO DATABASE"
+        )
+
+        print(
+            "Analysis ID:",
+            analysis.id
+        )
+
+        print(
+            "Evidence ID:",
+            evidence.id
+        )
+
+        print(
+            "Case ID:",
+            evidence.case_id
+        )
+
+        print(
+            "Risk Score:",
+            risk_score
+        )
+
+        print(
+            "Risk Level:",
+            risk_level
+        )
+
+        print(
+            "==========================================\n"
+        )
 
     except Exception as e:
 
         db.session.rollback()
+
+        print(
+            "Metadata Analysis DB Save Error:",
+            e
+        )
 
         flash(
             f"Database save failed: {str(e)}",
@@ -472,9 +589,11 @@ def analyze(evidence_id):
         )
 
         return redirect(
-            url_for("metadata.upload")
+            url_for(
+                "metadata.upload",
+                case_id=evidence.case_id
+            )
         )
-
 
     # ======================================
     # STORE REPORT IN SESSION
@@ -483,40 +602,39 @@ def analyze(evidence_id):
     session["metadata_report"] = {
 
         "evidence_id":
-        evidence.id,
+            evidence.id,
 
         "case_id":
-        evidence.case_id,
+            evidence.case_id,
 
         "filename":
-        evidence.original_filename,
+            evidence.original_filename,
 
         "hashes":
-        safe_hashes,
+            safe_hashes,
 
         "metadata":
-        safe_metadata,
+            safe_metadata,
 
         "file_info":
-        safe_file_info,
+            safe_file_info,
 
         "observations":
-        safe_observations,
+            safe_observations,
 
         "risk_score":
-        risk_score,
+            risk_score,
 
         "risk_level":
-        risk_level,
+            risk_level,
 
         "risk_reasons":
-        safe_risk_reasons,
+            safe_risk_reasons,
 
         "risk_breakdown":
-        safe_risk_breakdown
+            safe_risk_breakdown
 
     }
-
 
     # ======================================
     # DISPLAY RESULT

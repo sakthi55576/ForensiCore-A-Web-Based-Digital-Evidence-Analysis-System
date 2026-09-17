@@ -1043,28 +1043,28 @@
     <!-- FOOTER -->
     <!-- ===================================== -->
 
-    <div class="d-flex justify-content-between">
+<div class="d-flex justify-content-between align-items-center mt-4 mb-5">
 
-        <a href="{{ url_for('cases.dashboard') }}"
-           class="btn btn-outline-secondary">
+    <a href="{{ url_for('cases.dashboard') }}"
+       class="btn btn-outline-secondary">
+        Dashboard
+    </a>
 
-            Dashboard
+    <div>
 
+        <a href="{{ url_for('cases.case_details', case_id=evidence.case_id) }}"
+           class="btn btn-dark me-2">
+            ← Back to Case
         </a>
-
 
         <a href="{{ url_for('email.upload') }}"
            class="btn btn-primary">
-
             Analyze Another Email
-
         </a>
 
     </div>
 
-
-</div>
-
+</div>    
 
 <!-- ========================================= -->
 <!-- EMAIL RISK BAR SCRIPT -->

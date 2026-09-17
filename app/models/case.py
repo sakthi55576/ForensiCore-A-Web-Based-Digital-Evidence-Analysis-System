@@ -3,12 +3,23 @@ from datetime import datetime
 
 
 class Case(db.Model):
-
     __tablename__ = "cases"
 
     id = db.Column(
         db.Integer,
         primary_key=True
+    )
+
+    # Owner / Investigator User
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=True
+    )
+
+    user = db.relationship(
+        "User",
+        backref=db.backref("cases", lazy=True)
     )
 
     case_number = db.Column(

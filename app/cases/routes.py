@@ -52,13 +52,36 @@ ALLOWED_EXTENSIONS = {
 }
 
 
+# ==========================================
+# EVIDENCE FILE VALIDATION
+# ==========================================
+
 def allowed_evidence_file(filename):
 
     extension = os.path.splitext(
         filename
     )[1].lower()
 
-    return extension in ALLOWED_EXTENSIONS
+    # --------------------------------------
+    # Normal extension-based evidence
+    # --------------------------------------
+
+    if extension in ALLOWED_EXTENSIONS:
+        return True
+
+    # --------------------------------------
+    # Browser History files such as:
+    #
+    # Chrome: History
+    # Edge:   History
+    #
+    # These files have no extension.
+    # --------------------------------------
+
+    if extension == "":
+        return True
+
+    return False
 
 
 # ==========================================
@@ -73,7 +96,20 @@ def dashboard():
             url_for("auth.login")
         )
 
-    all_cases = Case.query.all()
+    # --------------------------------------
+    # Show ONLY logged-in user's cases
+    # --------------------------------------
+
+    all_cases = (
+        Case.query
+        .filter_by(
+            user_id=session["user_id"]
+        )
+        .order_by(
+            Case.id.desc()
+        )
+        .all()
+    )
 
     return render_template(
         "cases/dashboard.html",
@@ -98,9 +134,17 @@ def create_case():
 
     if request.method == "POST":
 
-        last_case = Case.query.order_by(
-            Case.id.desc()
-        ).first()
+        # ----------------------------------
+        # Generate Case Number
+        # ----------------------------------
+
+        last_case = (
+            Case.query
+            .order_by(
+                Case.id.desc()
+            )
+            .first()
+        )
 
         if last_case:
 
@@ -112,8 +156,16 @@ def create_case():
 
             case_number = "CASE-2026-0001"
 
+        # ----------------------------------
+        # Create Case
+        # ----------------------------------
 
         new_case = Case(
+
+            # IMPORTANT:
+            # Automatically assign case
+            # to currently logged-in user.
+            user_id=session["user_id"],
 
             case_number=case_number,
 
@@ -121,16 +173,16 @@ def create_case():
                 "case_title"
             ],
 
-            investigator_name=request.form[
-                "investigator_name"
-            ],
+            # Investigator is the logged-in user
+            investigator_name=session.get(
+                "full_name",
+                ""
+            ),
 
             case_summary=request.form[
                 "case_summary"
             ]
-
         )
-
 
         db.session.add(
             new_case
@@ -138,17 +190,14 @@ def create_case():
 
         db.session.commit()
 
-
         flash(
             "Case created successfully.",
             "success"
         )
 
-
         return redirect(
             url_for("cases.dashboard")
         )
-
 
     return render_template(
         "cases/create_case.html"
@@ -169,18 +218,35 @@ def case_details(case_id):
             url_for("auth.login")
         )
 
+    # --------------------------------------
+    # IMPORTANT SECURITY CHECK
+    #
+    # User can access ONLY their own case.
+    # --------------------------------------
 
-    case = Case.query.get_or_404(
-        case_id
+    case = (
+        Case.query
+        .filter_by(
+            id=case_id,
+            user_id=session["user_id"]
+        )
+        .first_or_404()
     )
 
+    # --------------------------------------
+    # Get evidence belonging to this case
+    # --------------------------------------
 
-    evidence_list = Evidence.query.filter_by(
-        case_id=case.id
-    ).order_by(
-        Evidence.id.desc()
-    ).all()
-
+    evidence_list = (
+        Evidence.query
+        .filter_by(
+            case_id=case.id
+        )
+        .order_by(
+            Evidence.id.desc()
+        )
+        .all()
+    )
 
     return render_template(
         "cases/case_details.html",
@@ -204,11 +270,21 @@ def add_evidence(case_id):
             url_for("auth.login")
         )
 
+    # --------------------------------------
+    # IMPORTANT SECURITY CHECK
+    #
+    # Evidence can be added ONLY to a case
+    # owned by the logged-in investigator.
+    # --------------------------------------
 
-    case = Case.query.get_or_404(
-        case_id
+    case = (
+        Case.query
+        .filter_by(
+            id=case_id,
+            user_id=session["user_id"]
+        )
+        .first_or_404()
     )
-
 
     if request.method == "POST":
 
@@ -230,11 +306,9 @@ def add_evidence(case_id):
                 )
             )
 
-
         file = request.files[
             "evidence"
         ]
-
 
         # ----------------------------------
         # Check filename
@@ -254,11 +328,9 @@ def add_evidence(case_id):
                 )
             )
 
-
         original_filename = secure_filename(
             file.filename
         )
-
 
         if not original_filename:
 
@@ -274,9 +346,8 @@ def add_evidence(case_id):
                 )
             )
 
-
         # ----------------------------------
-        # Check file extension
+        # Check evidence type
         # ----------------------------------
 
         if not allowed_evidence_file(
@@ -295,29 +366,43 @@ def add_evidence(case_id):
                 )
             )
 
-
         # ----------------------------------
-        # Generate unique stored filename
+        # Generate stored filename
         # ----------------------------------
 
         extension = os.path.splitext(
             original_filename
         )[1].lower()
 
+        # ----------------------------------
+        # Browser History files have
+        # no extension.
+        #
+        # Give them a safe internal
+        # extension so the stored filename
+        # remains unique and identifiable.
+        # ----------------------------------
 
-        stored_filename = (
-            f"{uuid.uuid4().hex}{extension}"
-        )
+        if extension == "":
 
+            stored_filename = (
+                f"{uuid.uuid4().hex}.history"
+            )
+
+        else:
+
+            stored_filename = (
+                f"{uuid.uuid4().hex}"
+                f"{extension}"
+            )
 
         stored_path = os.path.join(
             EVIDENCE_UPLOAD_FOLDER,
             stored_filename
         )
 
-
         # ----------------------------------
-        # Save file
+        # Save evidence
         # ----------------------------------
 
         try:
@@ -340,15 +425,17 @@ def add_evidence(case_id):
                 )
             )
 
-
         # ----------------------------------
-        # File information
+        # File size
         # ----------------------------------
 
         file_size = os.path.getsize(
             stored_path
         )
 
+        # ----------------------------------
+        # File type
+        # ----------------------------------
 
         file_type = (
             mimetypes.guess_type(
@@ -357,6 +444,16 @@ def add_evidence(case_id):
             or "application/octet-stream"
         )
 
+        # ----------------------------------
+        # Special handling for browser
+        # history files with no extension
+        # ----------------------------------
+
+        if extension == "":
+
+            file_type = (
+                "application/x-browser-history"
+            )
 
         # ----------------------------------
         # Create Evidence record
@@ -375,9 +472,11 @@ def add_evidence(case_id):
             file_size=file_size,
 
             status="Uploaded"
-
         )
 
+        # ----------------------------------
+        # Save database record
+        # ----------------------------------
 
         try:
 
@@ -394,12 +493,14 @@ def add_evidence(case_id):
             if os.path.exists(
                 stored_path
             ):
+
                 os.remove(
                     stored_path
                 )
 
             flash(
-                f"Unable to save evidence record: {str(e)}",
+                f"Unable to save evidence record: "
+                f"{str(e)}",
                 "danger"
             )
 
@@ -410,12 +511,14 @@ def add_evidence(case_id):
                 )
             )
 
+        # ----------------------------------
+        # Success
+        # ----------------------------------
 
         flash(
             "Evidence uploaded successfully.",
             "success"
         )
-
 
         return redirect(
             url_for(
@@ -423,7 +526,6 @@ def add_evidence(case_id):
                 case_id=case.id
             )
         )
-
 
     return render_template(
         "cases/add_evidence.html",

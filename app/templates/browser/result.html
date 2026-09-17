@@ -1,320 +1,918 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-<title>Browser History Analysis Report</title>
+    <meta charset="UTF-8">
 
-<link
-href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-rel="stylesheet"
->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Browser History Analysis Report</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .report-card {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .hash-value {
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .risk-score {
+            font-size: 42px;
+            font-weight: 700;
+        }
+
+        .risk-progress {
+            height: 22px;
+            border-radius: 12px;
+        }
+
+        .table td,
+        .table th {
+            vertical-align: middle;
+        }
+
+        .timeline-container {
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .url-cell {
+            word-break: break-all;
+        }
+
+        .report-header {
+            background: #212529;
+            color: white;
+            border-radius: 10px;
+        }
+
+    </style>
 
 </head>
 
+
 <body>
 
-<div class="container mt-5">
+<div class="container py-5">
 
-<h2>
-Browser History Analysis Report
-</h2>
 
-<hr>
+    <!-- ==========================================
+         REPORT HEADER
+         ========================================== -->
 
+    <div class="report-header p-4 mb-4 shadow-sm">
 
-<!-- Summary -->
+        <div class="d-flex justify-content-between align-items-center">
 
-<h4>
-Summary
-</h4>
+            <div>
 
-<table class="table table-bordered">
+                <h2 class="mb-1">
+                    Browser History Analysis Report
+                </h2>
 
-<tr>
+                <p class="mb-0">
+                    ForensiCore Digital Forensics System
+                </p>
 
-<th width="30%">
-Total URLs
-</th>
+            </div>
 
-<td>
-{{ history_data["Total URLs"] }}
-</td>
+            <span class="badge bg-light text-dark fs-6">
+                Browser Analysis
+            </span>
 
-</tr>
+        </div>
 
-</table>
+    </div>
 
 
-<!-- Top Visited Websites -->
+    <!-- ==========================================
+         EVIDENCE INFORMATION
+         ========================================== -->
 
-<h4 class="mt-4">
-Top Visited Websites
-</h4>
+    <div class="card report-card shadow-sm mb-4">
 
-<table class="table table-bordered">
+        <div class="card-header bg-primary text-white">
 
-<thead class="table-dark">
+            <h5 class="mb-0">
+                1. Evidence Information
+            </h5>
 
-<tr>
+        </div>
 
-<th width="10%">
-Rank
-</th>
 
-<th>
-Website
-</th>
+        <div class="card-body">
 
-<th width="20%">
-Visit Count
-</th>
+            <table class="table table-bordered mb-0">
 
-</tr>
+                <tr>
 
-</thead>
+                    <th width="30%">
+                        Evidence ID
+                    </th>
 
-<tbody>
+                    <td>
+                        {{ evidence.id }}
+                    </td>
 
-{% for site in top_sites %}
+                </tr>
 
-<tr>
 
-<td>
-{{ loop.index }}
-</td>
+                <tr>
 
-<td style="word-break:break-all;">
-{{ site["URL"] }}
-</td>
+                    <th>
+                        Case ID
+                    </th>
 
-<td>
-{{ site["Visit Count"] }}
-</td>
+                    <td>
+                        {{ evidence.case_id }}
+                    </td>
 
-</tr>
+                </tr>
 
-{% endfor %}
 
-</tbody>
+                <tr>
 
-</table>
+                    <th>
+                        Evidence File
+                    </th>
 
+                    <td>
+                        {{ history_file }}
+                    </td>
 
-<!-- Browsing Timeline -->
+                </tr>
 
-<h4 class="mt-4">
-Browsing Timeline
-</h4>
 
-<div
-style="
-max-height: 400px;
-overflow-y: auto;
-"
->
+                <tr>
 
-<table class="table table-bordered">
+                    <th>
+                        Stored File
+                    </th>
 
-<thead class="table-dark">
+                    <td>
+                        {{ evidence.stored_filename }}
+                    </td>
 
-<tr>
+                </tr>
 
-<th>
-Time
-</th>
 
-<th>
-Website
-</th>
+                <tr>
 
-<th>
-Title
-</th>
+                    <th>
+                        File Type
+                    </th>
 
-</tr>
+                    <td>
+                        {{ evidence.file_type or "Unknown" }}
+                    </td>
 
-</thead>
+                </tr>
 
-<tbody>
 
-{% for item in timeline %}
+                <tr>
 
-<tr>
+                    <th>
+                        File Size
+                    </th>
 
-<td>
-{{ item["Last Visit"] }}
-</td>
+                    <td>
 
-<td style="word-break:break-all;">
-{{ item["URL"] }}
-</td>
+                        {% if evidence.file_size %}
 
-<td>
-{{ item["Title"] }}
-</td>
+                            {{ "%.2f"|format(
+                                evidence.file_size / 1024
+                            ) }}
+                            KB
 
-</tr>
+                        {% else %}
 
-{% endfor %}
+                            Not Available
 
-</tbody>
+                        {% endif %}
 
-</table>
+                    </td>
 
-</div>
+                </tr>
 
 
-<!-- Evidence Integrity -->
+                <tr>
 
-<h4 class="mt-4">
-Evidence Integrity
-</h4>
+                    <th>
+                        Analysis Status
+                    </th>
 
-<table class="table table-bordered">
+                    <td>
 
-<tr>
+                        <span class="badge bg-success">
+                            Analysis Completed
+                        </span>
 
-<th width="30%">
-Evidence File
-</th>
+                    </td>
 
-<td>
-{{ history_file }}
-</td>
+                </tr>
 
-</tr>
+            </table>
 
-<tr>
+        </div>
 
-<th>
-Hash Algorithm
-</th>
+    </div>
 
-<td>
-SHA-256
-</td>
 
-</tr>
+    <!-- ==========================================
+         BROWSER HISTORY SUMMARY
+         ========================================== -->
 
-<tr>
+    <div class="card report-card shadow-sm mb-4">
 
-<th>
-SHA-256 Hash
-</th>
+        <div class="card-header bg-dark text-white">
 
-<td style="word-break:break-all;">
-{{ file_hash }}
-</td>
+            <h5 class="mb-0">
+                2. Browser History Summary
+            </h5>
 
-</tr>
+        </div>
 
-</table>
 
+        <div class="card-body">
 
-<!-- Risk Assessment -->
+            <table class="table table-bordered mb-0">
 
-<h4 class="mt-4">
-Risk Assessment
-</h4>
+                <tr>
 
-<table class="table table-bordered">
+                    <th width="30%">
+                        Total URLs Analyzed
+                    </th>
 
-<tr>
+                    <td>
+                        {{ history_data["Total URLs"] }}
+                    </td>
 
-<th width="30%">
-Risk Score
-</th>
+                </tr>
 
-<td>
-{{ risk_data["Risk Score"] }} / 100
-</td>
 
-</tr>
+                <tr>
 
-<tr>
+                    <th>
+                        Records Displayed
+                    </th>
 
-<th>
-Risk Level
-</th>
+                    <td>
+                        {{ history_data["History"]|length }}
+                    </td>
 
-<td>
-{{ risk_data["Risk Level"] }}
-</td>
+                </tr>
 
-</tr>
+            </table>
 
-</table>
+        </div>
 
+    </div>
 
-<!-- Security Findings -->
 
-<h5 class="mt-3">
-Security Findings
-</h5>
+    <!-- ==========================================
+         TOP VISITED WEBSITES
+         ========================================== -->
 
-<ul>
+    <div class="card report-card shadow-sm mb-4">
 
-{% for finding in risk_data["Findings"] %}
+        <div class="card-header bg-dark text-white">
 
-<li>
-{{ finding }}
-</li>
+            <h5 class="mb-0">
+                3. Top Visited Websites
+            </h5>
 
-{% endfor %}
+        </div>
 
-</ul>
 
+        <div class="card-body p-0">
 
-<!-- Final Consolidated Forensic Report -->
+            {% if top_sites %}
 
-<div class="text-center mt-4">
+            <div class="table-responsive">
 
-<a
-href="{{ url_for('reports.generate_report', file=history_file) }}"
-class="btn btn-success"
->
+                <table class="table table-bordered table-hover mb-0">
 
-Download Final Forensic Report
+                    <thead class="table-light">
 
-</a>
+                        <tr>
 
-</div>
+                            <th width="10%">
+                                Rank
+                            </th>
 
+                            <th>
+                                Website / URL
+                            </th>
 
-<!-- View Full History -->
+                            <th width="20%">
+                                Visit Count
+                            </th>
 
-<div class="text-center mt-3">
+                        </tr>
 
-<a
-href="{{ url_for('browser.full_history', file=history_file) }}"
-class="btn btn-primary"
->
+                    </thead>
 
-View Full History
 
-</a>
+                    <tbody>
 
-</div>
+                    {% for site in top_sites %}
 
+                        <tr>
 
-<!-- Analyze Another History -->
+                            <td>
+                                {{ loop.index }}
+                            </td>
 
-<div class="text-center mt-3">
+                            <td class="url-cell">
+                                {{ site["URL"] }}
+                            </td>
 
-<a
-href="/browser/"
-class="btn btn-secondary"
->
+                            <td>
+                                {{ site["Visit Count"] }}
+                            </td>
 
-Analyze Another History
+                        </tr>
 
-</a>
+                    {% endfor %}
 
-</div>
+                    </tbody>
 
+                </table>
 
-</div>
+            </div>
+
+            {% else %}
+
+            <div class="p-4 text-center text-muted">
+
+                No browsing records available.
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         BROWSING TIMELINE
+         ========================================== -->
+
+    <div class="card report-card shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white">
+
+            <h5 class="mb-0">
+                4. Browsing Timeline
+            </h5>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            {% if timeline %}
+
+            <div class="timeline-container">
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered table-hover mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th width="20%">
+                                    Last Visit
+                                </th>
+
+                                <th>
+                                    Website / URL
+                                </th>
+
+                                <th>
+                                    Page Title
+                                </th>
+
+                                <th width="12%">
+                                    Visits
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                        {% for item in timeline %}
+
+                            <tr>
+
+                                <td>
+                                    {{ item["Last Visit"] }}
+                                </td>
+
+                                <td class="url-cell">
+                                    {{ item["URL"] }}
+                                </td>
+
+                                <td>
+                                    {{ item["Title"] }}
+                                </td>
+
+                                <td>
+                                    {{ item["Visit Count"] }}
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            {% else %}
+
+            <div class="p-4 text-center text-muted">
+
+                No browsing timeline available.
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         EVIDENCE INTEGRITY
+         ========================================== -->
+
+    <div class="card report-card shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white">
+
+            <h5 class="mb-0">
+                5. Evidence Integrity
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <table class="table table-bordered mb-0">
+
+                <tr>
+
+                    <th width="30%">
+                        Evidence File
+                    </th>
+
+                    <td>
+                        {{ history_file }}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <th>
+                        Hash Algorithm
+                    </th>
+
+                    <td>
+                        SHA-256
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <th>
+                        SHA-256 Hash
+                    </th>
+
+                    <td class="hash-value">
+                        {{ file_hash }}
+                    </td>
+
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         RISK ASSESSMENT
+         ========================================== -->
+
+    <div class="card report-card shadow-sm mb-4">
+
+        <div class="card-header bg-danger text-white">
+
+            <h5 class="mb-0">
+                6. Browser Risk Assessment
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+
+            <!-- Risk Score -->
+
+            <div class="text-center mb-4">
+
+                <div class="text-muted">
+                    Risk Score
+                </div>
+
+                <div class="risk-score">
+
+                    {{ risk_data["Risk Score"] }}
+
+                    <span class="fs-5 text-muted">
+                        / 100
+                    </span>
+
+                </div>
+
+
+                {% if risk_data["Risk Level"] == "HIGH" %}
+
+                    <span class="badge bg-danger fs-6">
+                        HIGH
+                    </span>
+
+                {% elif risk_data["Risk Level"] == "MEDIUM" %}
+
+                    <span class="badge bg-warning text-dark fs-6">
+                        MEDIUM
+                    </span>
+
+                {% else %}
+
+                    <span class="badge bg-success fs-6">
+                        LOW
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- Risk Progress -->
+
+            <div class="progress risk-progress mb-4">
+
+                <div
+                    id="riskProgressBar"
+                    class="progress-bar"
+                    role="progressbar"
+                    data-score="{{ risk_data['Risk Score'] }}"
+                    data-level="{{ risk_data['Risk Level'] }}"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="{{ risk_data['Risk Score'] }}"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- Risk Scale -->
+
+            <div class="alert alert-light border">
+
+                <strong>
+                    Risk Scale:
+                </strong>
+
+                <br>
+
+                <span class="text-success">
+                    LOW: 0–39
+                </span>
+
+                &nbsp; | &nbsp;
+
+                <span class="text-warning">
+                    MEDIUM: 40–69
+                </span>
+
+                &nbsp; | &nbsp;
+
+                <span class="text-danger">
+                    HIGH: 70–100
+                </span>
+
+            </div>
+
+
+            <!-- ======================================
+                 RISK BREAKDOWN
+                 ====================================== -->
+
+            <h6 class="section-title mt-4">
+                Risk Breakdown
+            </h6>
+
+
+            {% if risk_data.get("Risk Breakdown") %}
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Risk Factor
+                            </th>
+
+                            <th width="15%">
+                                Score
+                            </th>
+
+                            <th width="15%">
+                                Maximum
+                            </th>
+
+                            <th>
+                                Observation
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    {% for item in risk_data["Risk Breakdown"] %}
+
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ item["Factor"] }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ item["Score"] }}
+                            </td>
+
+                            <td>
+                                {{ item["Maximum"] }}
+                            </td>
+
+                            <td>
+                                {{ item["Observation"] }}
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <p class="text-muted">
+                No risk breakdown available.
+            </p>
+
+            {% endif %}
+
+
+            <!-- ======================================
+                 RISK INDICATORS
+                 ====================================== -->
+
+            <h6 class="section-title mt-4">
+                Risk Indicators
+            </h6>
+
+
+            <ul>
+
+            {% for finding in risk_data["Findings"] %}
+
+                <li class="mb-2">
+                    {{ finding }}
+                </li>
+
+            {% endfor %}
+
+            </ul>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         FORENSIC INTERPRETATION
+         ========================================== -->
+
+    <div class="card report-card shadow-sm mb-4">
+
+        <div class="card-header bg-secondary text-white">
+
+            <h5 class="mb-0">
+                7. Forensic Interpretation
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <p class="mb-0">
+
+                {{ risk_data.get(
+                    "Forensic Interpretation",
+                    "The browser risk score represents "
+                    "observable indicators identified "
+                    "from the available browser-history "
+                    "records."
+                ) }}
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+         REPORT NOTE
+         ========================================== -->
+
+    <div class="alert alert-info">
+
+        <strong>Forensic Note:</strong>
+
+        Browser-history indicators are investigative
+        observations. The risk score does not independently
+        prove malicious activity or user intent.
+
+    </div>
+
+
+    <!-- ==========================================
+         ACTION BUTTONS
+         ========================================== -->
+
+ <!-- ========================================== -->
+<!-- FINAL ACTION BUTTONS -->
+<!-- ========================================== -->
+
+<div class="text-center mt-4 mb-5">
+
+    <!-- View Full History -->
+    <a
+        href="{{ url_for('browser.full_history', evidence_id=evidence.id) }}"
+        class="btn btn-primary me-2"
+    >
+        View Full History
+    </a>
+
+    <!-- Analyze Another Evidence -->
+    <a
+        href="{{ url_for('browser.upload', case_id=evidence.case_id) }}"
+        class="btn btn-secondary me-2"
+    >
+        Analyze Another Evidence
+    </a>
+
+    <!-- Back to Case -->
+    <a
+        href="{{ url_for('cases.case_details', case_id=evidence.case_id) }}"
+        class="btn btn-dark"
+    >
+        ← Back to Case
+    </a>
+
+</div>   
+
+
+<!-- ==========================================
+     JAVASCRIPT
+     ========================================== -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const progressBar =
+            document.getElementById(
+                "riskProgressBar"
+            );
+
+
+        if (!progressBar) {
+
+            return;
+
+        }
+
+
+        const riskScore =
+            Number(
+                progressBar.dataset.score
+            );
+
+
+        const riskLevel =
+            progressBar.dataset.level;
+
+
+        progressBar.style.width =
+            riskScore + "%";
+
+
+        if (riskLevel === "HIGH") {
+
+            progressBar.classList.add(
+                "bg-danger"
+            );
+
+        }
+
+        else if (riskLevel === "MEDIUM") {
+
+            progressBar.classList.add(
+                "bg-warning"
+            );
+
+        }
+
+        else {
+
+            progressBar.classList.add(
+                "bg-success"
+            );
+
+        }
+
+    }
+
+);
+
+</script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+</script>
 
 </body>
 

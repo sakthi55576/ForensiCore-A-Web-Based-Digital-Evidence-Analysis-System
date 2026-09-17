@@ -4,14 +4,12 @@ from urllib.parse import quote_plus
 
 from app.config import Config
 
-
 db = SQLAlchemy()
 
 
 def create_app():
 
     app = Flask(__name__)
-
 
     # ==========================
     # Application Configuration
@@ -125,11 +123,13 @@ def create_app():
     # Database Models
     # ==========================
 
-    from app.models import Evidence
-
-    from app.models.metadata_analysis import (
-        MetadataAnalysis
+    from app.models import (
+        Evidence,
+        EmailAnalysis,
+        BrowserAnalysis
     )
+
+    from app.models.metadata_analysis import MetadataAnalysis
 
 
     # ==========================

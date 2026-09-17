@@ -315,6 +315,7 @@
 
                                     </td>
 
+
                                 </tr>
 
                             {% endfor %}
@@ -399,7 +400,7 @@
 
 
                 <a
-                    href="{{ url_for('metadata.upload') }}"
+                    href="{{ url_for('metadata.upload') }}?case_id={{ case.id }}"
                     class="btn btn-primary"
                 >
                     Open Module
@@ -431,12 +432,13 @@
                 </p>
 
 
-             <a
-    href="{{ url_for('email.upload') }}?case_id={{ case.id }}"
-    class="btn btn-success"
->
-    Open Module
-</a>   
+                <a
+                    href="{{ url_for('email.upload') }}?case_id={{ case.id }}"
+                    class="btn btn-success"
+                >
+                    Open Module
+                </a>
+
             </div>
 
         </div>
@@ -457,14 +459,17 @@
 
                 <p class="text-muted">
 
-                    Analyze browser history, visited URLs,
-                    timestamps and suspicious browsing patterns.
+                    Analyze browser history, visited URLs, timestamps
+                    and observable browsing indicators.
 
                 </p>
 
 
                 <a
-                    href="#"
+                    href="{{ url_for(
+                        'browser.upload',
+                        case_id=case.id
+                    ) }}"
                     class="btn btn-warning"
                 >
                     Open Module
@@ -496,8 +501,13 @@
                 </p>
 
 
+                <!-- FIXED: CASE ID PASSED -->
+
                 <a
-                    href="#"
+                    href="{{ url_for(
+                        'risk_engine.risk_dashboard',
+                        case_id=case.id
+                    ) }}"
                     class="btn btn-danger"
                 >
                     Open Module
@@ -529,8 +539,13 @@
                 </p>
 
 
+                <!-- FIXED: PDF ROUTE + CASE ID -->
+
                 <a
-                    href="#"
+                    href="{{ url_for(
+                        'reports.generate_report',
+                        case_id=case.id
+                    ) }}"
                     class="btn btn-secondary"
                 >
                     Generate PDF

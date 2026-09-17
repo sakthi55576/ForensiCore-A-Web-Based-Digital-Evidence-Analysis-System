@@ -3,6 +3,10 @@
 # ==========================================
 
 
+# ==========================================
+# NORMALIZE RISK LEVEL
+# ==========================================
+
 def normalize_risk_level(level):
 
     if not level:
@@ -17,21 +21,20 @@ def normalize_risk_level(level):
 
 
 # ==========================================
-# CONVERT RISK LEVEL TO SCORE
+# NORMALIZE RISK SCORE
 # ==========================================
 
-def risk_level_to_score(level):
+def normalize_risk_score(score):
 
-    level = normalize_risk_level(level)
+    try:
+        score = int(score)
+    except (ValueError, TypeError):
+        score = 0
 
-    if level == "HIGH":
-        return 80
-
-    elif level == "MEDIUM":
-        return 50
-
-    else:
-        return 10
+    return max(
+        0,
+        min(score, 100)
+    )
 
 
 # ==========================================
@@ -43,24 +46,11 @@ def get_email_risk_score(email_data):
     if not email_data:
         return 0
 
-    try:
-
-        score = int(
-            email_data.get(
-                "Risk Score",
-                0
-            )
+    return normalize_risk_score(
+        email_data.get(
+            "Risk Score",
+            0
         )
-
-    except (ValueError, TypeError):
-
-        score = 0
-
-    # Keep score within 0-100
-
-    return max(
-        0,
-        min(score, 100)
     )
 
 
@@ -73,22 +63,11 @@ def get_browser_risk_score(browser_data):
     if not browser_data:
         return 0
 
-    try:
-
-        score = int(
-            browser_data.get(
-                "Risk Score",
-                0
-            )
+    return normalize_risk_score(
+        browser_data.get(
+            "Risk Score",
+            0
         )
-
-    except (ValueError, TypeError):
-
-        score = 0
-
-    return max(
-        0,
-        min(score, 100)
     )
 
 
@@ -98,16 +77,15 @@ def get_browser_risk_score(browser_data):
 
 def calculate_overall_level(score):
 
-    if score >= 70:
+    score = normalize_risk_score(score)
 
+    if score >= 70:
         return "HIGH"
 
     elif score >= 40:
-
         return "MEDIUM"
 
     else:
-
         return "LOW"
 
 
@@ -116,6 +94,7 @@ def calculate_overall_level(score):
 # ==========================================
 
 def generate_overall_risk_report(
+    metadata_score=0,
     metadata_risk="LOW",
     email_data=None,
     browser_data=None
@@ -128,7 +107,11 @@ def generate_overall_risk_report(
     # METADATA SCORE
     # ======================================
 
-    metadata_score = risk_level_to_score(
+    metadata_score = normalize_risk_score(
+        metadata_score
+    )
+
+    metadata_level = normalize_risk_level(
         metadata_risk
     )
 
@@ -152,14 +135,8 @@ def generate_overall_risk_report(
 
 
     # ======================================
-    # COLLECT FINDINGS
+    # COLLECT METADATA FINDINGS
     # ======================================
-
-    # Metadata
-
-    metadata_level = normalize_risk_level(
-        metadata_risk
-    )
 
     if metadata_level == "HIGH":
 
@@ -176,7 +153,9 @@ def generate_overall_risk_report(
         )
 
 
-    # Email
+    # ======================================
+    # COLLECT EMAIL FINDINGS
+    # ======================================
 
     if email_data:
 
@@ -201,6 +180,7 @@ def generate_overall_risk_report(
                 "indicators detected."
             )
 
+
         email_findings = email_data.get(
             "Findings",
             []
@@ -215,7 +195,9 @@ def generate_overall_risk_report(
                 )
 
 
-    # Browser
+    # ======================================
+    # COLLECT BROWSER FINDINGS
+    # ======================================
 
     if browser_data:
 
@@ -240,6 +222,7 @@ def generate_overall_risk_report(
                 "in browser history."
             )
 
+
         browser_findings = browser_data.get(
             "Findings",
             []
@@ -255,26 +238,16 @@ def generate_overall_risk_report(
 
 
     # ======================================
-    # CALCULATE OVERALL SCORE
+    # ACTIVE MODULE SCORES
     # ======================================
-
-    scores = [
-
-        metadata_score,
-
-        email_score,
-
-        browser_score
-
-    ]
-
-
-    # Only consider modules that have data
 
     active_scores = []
 
 
-    if metadata_risk:
+    # Metadata is active when a score
+    # or risk level is available.
+
+    if metadata_score > 0 or metadata_risk:
 
         active_scores.append(
             metadata_score
@@ -295,6 +268,10 @@ def generate_overall_risk_report(
         )
 
 
+    # ======================================
+    # CALCULATE OVERALL SCORE
+    # ======================================
+
     if active_scores:
 
         overall_score = round(
@@ -305,6 +282,11 @@ def generate_overall_risk_report(
     else:
 
         overall_score = 0
+
+
+    overall_score = normalize_risk_score(
+        overall_score
+    )
 
 
     # ======================================
