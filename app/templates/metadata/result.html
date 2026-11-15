@@ -1,0 +1,899 @@
+{% extends "base.html" %}
+
+{% block title %}Metadata Analysis Report | ForensiCore{% endblock %}
+
+{% block content %}
+
+<!-- ===================================== -->
+<!-- HEADER -->
+<!-- ===================================== -->
+
+<div class="fc-page-header">
+
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            <span class="sep">/</span>
+            <a href="{{ url_for('metadata.upload', case_id=evidence.case_id) }}">Metadata Analyzer</a>
+            <span class="sep">/</span>
+            <span>Report</span>
+        </div>
+        <h1 class="fc-page-title">Digital Evidence Analysis Report</h1>
+        <p class="fc-page-subtitle">
+            Metadata Analysis Module
+        </p>
+    </div>
+
+    <a href="{{ url_for('metadata.upload', case_id=evidence.case_id) }}"
+       class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-repeat me-1"></i> Analyze Another Evidence
+    </a>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- FORENSIC ANALYSIS -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header bg-dark text-white">
+        <i class="bi bi-file-earmark-image me-2"></i>Forensic Analysis
+    </div>
+
+    <div class="card-body">
+
+        <p class="text-muted mb-1">
+            Evidence File
+        </p>
+
+        <h4>
+            {{ filename }}
+        </h4>
+
+        {% if evidence %}
+
+            <p class="text-muted mb-0 fc-mono">
+
+                Evidence ID: {{ evidence.id }}
+
+                |
+
+                Case ID: {{ evidence.case_id }}
+
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 1. FILE INFORMATION -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">01</span> File Information
+    </div>
+
+    <div class="card-body">
+
+        <div class="row">
+
+            <div class="col-md-6 mb-3">
+
+                <strong>File Name</strong>
+
+                <div>
+                    {{ file_info.get(
+                        'File Name',
+                        filename
+                    ) }}
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>File Size</strong>
+
+                <div>
+                    {{ file_info.get(
+                        'File Size',
+                        'Not Available'
+                    ) }}
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>MIME Type</strong>
+
+                <div>
+                    {{ file_info.get(
+                        'MIME Type',
+                        'Not Available'
+                    ) }}
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>File Extension</strong>
+
+                <div>
+                    {{ file_info.get(
+                        'File Extension',
+                        'Not Available'
+                    ) }}
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Created Date</strong> <span class="text-muted small">(stored copy)</span>
+
+                <div>
+                    {{ file_info.get(
+                        'Created Date',
+                        'Not Available'
+                    ) }}
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Modified Date</strong> <span class="text-muted small">(stored copy)</span>
+
+                <div>
+                    {{ file_info.get(
+                        'Modified Date',
+                        'Not Available'
+                    ) }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <hr>
+
+
+        <div class="alert alert-secondary mb-0">
+
+            <strong>Forensic Note:</strong>
+
+            File-system timestamps shown here refer to the copy
+            available on the analysis host. They should not
+            automatically be treated as the original source-device
+            timestamps.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 2. INTEGRITY & HASH VERIFICATION -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">02</span> Integrity &amp; Hash Verification
+    </div>
+
+
+    <div class="card-body">
+
+        <p class="text-muted">
+
+            These are the hashes recorded when the evidence was acquired.
+            They are compared with the file again before every analysis.
+
+        </p>
+
+
+        <div class="hash-row">
+            <span class="hash-label">MD5</span>
+            <span class="hash-value">{{ hashes.get('MD5') or 'Not Available' }}</span>
+            <button type="button" class="hash-copy-btn" data-copy-value="{{ hashes.get('MD5') or '' }}" title="Copy MD5">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
+
+        <div class="hash-row">
+            <span class="hash-label">SHA-256</span>
+            <span class="hash-value">{{ hashes.get('SHA256') or 'Not Available' }}</span>
+            <button type="button" class="hash-copy-btn" data-copy-value="{{ hashes.get('SHA256') or '' }}" title="Copy SHA-256">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
+
+        <div class="mt-3">
+            <span class="int-badge int-{{ evidence.integrity_status or 'Unchecked' }}">
+                <i class="bi bi-shield-check"></i> Integrity {{ evidence.integrity_status or 'Unchecked' }}
+            </span>
+            <span class="small text-muted ms-2">Hashes recorded {{ evidence.hash_recorded_at | utc }};
+                re-verified {{ evidence.last_verified_at | utc }} before this analysis.</span>
+        </div>
+
+        <div class="alert alert-info mb-0 mt-3">
+
+            <strong>Integrity Principle:</strong>
+
+            If the same evidence file is analyzed again without
+            modification, its cryptographic hash should remain
+            the same.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 3. EXTRACTED METADATA -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">03</span> Extracted Metadata &mdash; Image Information
+    </div>
+
+
+    <div class="card-body">
+
+        <div class="row">
+
+
+            <div class="col-md-4 mb-3">
+
+                <strong>Format</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Format',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4 mb-3">
+
+                <strong>Image Width</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Image Width',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4 mb-3">
+
+                <strong>Image Height</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Image Height',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4 mb-3">
+
+                <strong>Color Mode</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Color Mode',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4 mb-3">
+
+                <strong>Metadata Status</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Metadata Status',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 4. TIMESTAMP ANALYSIS -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">04</span> Timestamp Analysis
+    </div>
+
+
+    <div class="card-body">
+
+        <div class="row">
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Original Capture Time</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Original Capture Time',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Digitized Time</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Digitized Time',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {% if not metadata.get('Original Capture Time')
+              and not metadata.get('Digitized Time') %}
+
+            <div class="alert alert-warning mb-0">
+
+                No useful embedded timestamp was identified.
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 5. DEVICE & SOFTWARE -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">05</span> Device &amp; Camera Information / Software Analysis
+    </div>
+
+
+    <div class="card-body">
+
+        <div class="row">
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Camera Make</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Camera Make',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Camera Model</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Camera Model',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Software</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Software',
+                        'Not Available'
+                    ) }}
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6 mb-3">
+
+                <strong>Software Classification</strong>
+
+                <div>
+
+                    {{ metadata.get(
+                        'Software Type',
+                        'Not Classified'
+                    ) }}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 6. GPS / LOCATION -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">06</span> GPS / Location Information
+    </div>
+
+
+    <div class="card-body">
+
+        <p>
+
+            <strong>GPS Status:</strong>
+
+            {{ metadata.get(
+                'GPS Status',
+                'Not Available'
+            ) }}
+
+        </p>
+
+
+        {% if metadata.get('Latitude')
+              and metadata.get('Longitude') %}
+
+            <p>
+
+                <strong>Latitude:</strong>
+
+                {{ metadata.get(
+                    'Latitude'
+                ) }}
+
+            </p>
+
+
+            <p>
+
+                <strong>Longitude:</strong>
+
+                {{ metadata.get(
+                    'Longitude'
+                ) }}
+
+            </p>
+
+            <a class="btn btn-sm btn-outline-secondary"
+               target="_blank" rel="noopener"
+               href="https://www.openstreetmap.org/?mlat={{ metadata.get('Latitude') }}&mlon={{ metadata.get('Longitude') }}#map=16/{{ metadata.get('Latitude') }}/{{ metadata.get('Longitude') }}">
+                <i class="bi bi-geo-alt me-1"></i>Open in OpenStreetMap
+            </a>
+
+        {% else %}
+
+            <div class="alert alert-secondary mb-0">
+
+                No GPS coordinates were identified in the available
+                metadata. Absence of GPS information is not
+                considered evidence of manipulation by itself.
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 7. FORENSIC OBSERVATIONS -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">07</span> Observations
+    </div>
+
+
+    <div class="card-body">
+
+        {% if observations %}
+
+            <ul class="mb-0">
+
+                {% for observation in observations %}
+
+                    <li class="mb-2">
+
+                        {{ observation }}
+
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p class="text-muted mb-0">
+
+                No observations were generated.
+
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 8. METADATA RISK ASSESSMENT -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">08</span> Risk Assessment
+    </div>
+
+
+    <div class="card-body">
+
+
+        <!-- OVERALL SCORE -->
+
+        <div class="text-center mb-4">
+
+            <p class="text-muted mb-1">
+                Manipulation Indicator Score
+            </p>
+
+
+            <div class="risk-score-display risk-{{ risk_level }}">
+                {{ risk_score }}<span class="fs-4 text-muted"> / 100</span>
+            </div>
+
+            <div class="mt-2">
+                {% if risk_level == "HIGH" %}
+
+                    <span class="risk-badge risk-HIGH"><span class="dot"></span> HIGH RISK</span>
+
+                {% elif risk_level == "MEDIUM" %}
+
+                    <span class="risk-badge risk-MEDIUM"><span class="dot"></span> MEDIUM RISK</span>
+
+                {% else %}
+
+                    <span class="risk-badge risk-LOW"><span class="dot"></span> LOW RISK</span>
+
+                {% endif %}
+            </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- RISK SCALE -->
+        <!-- ================================= -->
+
+        <div class="mb-4">
+
+            <div class="d-flex justify-content-between
+                        text-muted small">
+
+                <span>LOW</span>
+
+                <span>MEDIUM</span>
+
+                <span>HIGH</span>
+
+            </div>
+
+
+            <div class="risk-meter">
+                <div class="risk-meter-fill risk-{{ risk_level }}"
+                     style="width: {{ risk_score }}%;"
+                     role="progressbar"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ risk_score }}">
+                </div>
+            </div>
+
+
+            <div class="d-flex justify-content-between
+                        text-muted small mt-1">
+
+                <span>0&ndash;29</span>
+
+                <span>30&ndash;69</span>
+
+                <span>70&ndash;100</span>
+
+            </div>
+
+        </div>
+
+
+        <hr>
+
+
+        <!-- ================================= -->
+        <!-- RISK BREAKDOWN -->
+        <!-- ================================= -->
+
+        <h5 class="mb-3">
+            Risk Breakdown
+        </h5>
+
+
+        {% if risk_breakdown %}
+
+            {% for item in risk_breakdown %}
+
+                <div class="border rounded p-3 mb-3">
+
+
+                    <div class="d-flex
+                                justify-content-between
+                                align-items-center">
+
+                        <strong>
+                            {{ item.category }}
+                        </strong>
+
+
+                        <strong>
+                            +{{ item.points }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="mt-2">
+
+                        {% if item.points > 0 %}
+
+                            <span class="badge bg-warning text-dark">
+
+                                {{ item.status }}
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+
+                                {{ item.status }}
+
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <p class="text-muted small mb-0 mt-2">
+
+                        {{ item.reason }}
+
+                    </p>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="alert alert-secondary">
+
+                Risk breakdown information is not available.
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- ================================= -->
+        <!-- TOTAL SCORE -->
+        <!-- ================================= -->
+
+        <div class="fc-panel p-3 mb-4">
+
+            <div class="d-flex
+                        justify-content-between">
+
+                <strong>
+                    Total Metadata Risk Score
+                </strong>
+
+                <strong>
+                    {{ risk_score }} / 100
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- RISK INDICATORS -->
+        <!-- ================================= -->
+
+        <h5 class="mb-3">
+            Risk Indicators
+        </h5>
+
+
+        {% if risk_reasons %}
+
+            <ul>
+
+                {% for reason in risk_reasons %}
+
+                    <li class="mb-2">
+
+                        {{ reason }}
+
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p class="text-muted">
+
+                No significant metadata-based risk indicators
+                were identified.
+
+            </p>
+
+        {% endif %}
+
+
+        <!-- ================================= -->
+        <!-- FORENSIC INTERPRETATION -->
+        <!-- ================================= -->
+
+        <div class="alert alert-info mt-4 mb-0">
+
+            <strong>Forensic Interpretation:</strong>
+
+            The metadata risk score represents indicators found
+            in the available metadata. It does not by itself prove
+            that the evidence is authentic, manipulated, or malicious.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- FOOTER ACTIONS -->
+<!-- ===================================== -->
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-2 flex-wrap gap-2">
+
+    <!-- Dashboard -->
+    <a href="{{ url_for('cases.dashboard') }}"
+       class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+
+    <div class="d-flex flex-wrap gap-2">
+
+        <!-- Back to Case -->
+        <a href="{{ url_for('cases.case_details', case_id=evidence.case_id) }}"
+           class="btn btn-dark">
+            <i class="bi bi-folder2 me-1"></i> Back to Case
+        </a>
+
+        <!-- Analyze Another Evidence -->
+        <a href="{{ url_for('metadata.upload', case_id=evidence.case_id) }}"
+           class="btn btn-primary">
+            <i class="bi bi-arrow-repeat me-1"></i> Analyze Another Evidence
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}

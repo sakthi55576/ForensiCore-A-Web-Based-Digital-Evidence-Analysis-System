@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Browser History Analyzer | ForensiCore{% endblock %}
+
+{% block content %}
+{% set picker_title = "Browser History Analyzer" %}
+{% set picker_icon = "bi-globe2" %}
+{% set picker_desc = "Analyze Chrome / Edge history: searches, downloads, visits and risk indicators." %}
+{% set analyze_endpoint = "browser.analyze" %}
+{% set picker_types = "Chrome / Edge History files" %}
+{% set extra_endpoint = "browser.full_history" %}
+{% include "partials/_picker.html" %}
+{% endblock %}

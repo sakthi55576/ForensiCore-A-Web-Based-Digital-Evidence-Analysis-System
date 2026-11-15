@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Evidence #{{ evidence.id }} | ForensiCore{% endblock %}
+
+{% block content %}
+
+{% set status = evidence.integrity_status or 'Unchecked' %}
+{% set analyzer = analyzer_for(evidence) %}
+
+<div class="fc-page-header">
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            <span class="sep">/</span>
+            <a href="{{ url_for('cases.case_details', case_id=case.id) }}">{{ case.case_number }}</a>
+            <span class="sep">/</span>
+            <span>Evidence #{{ evidence.id }}</span>
+        </div>
+        <h1 class="fc-page-title">Evidence receipt</h1>
+        <p class="fc-page-subtitle">Acquisition record for <strong>{{ evidence.original_filename }}</strong></p>
+    </div>
+    <div class="fc-page-actions">
+        <a href="{{ url_for('cases.case_details', case_id=case.id) }}#tab-evidence" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to case</a>
+        {% if analyzer and status not in ['Tampered', 'Missing'] %}
+        <form method="post" action="{{ url_for(analyzer[0], evidence_id=evidence.id) }}" class="d-inline">{{ csrf_input() }}<button type="submit" class="btn btn-primary"><i class="bi bi-cpu me-1"></i>Run {{ analyzer[1] }}</button></form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="integrity-banner int-{{ status }} mb-3">
+    <i class="bi {% if status == 'Verified' %}bi-shield-check{% elif status in ['Tampered', 'Missing'] %}bi-shield-x{% else %}bi-shield-exclamation{% endif %}"></i>
+    <div class="flex-grow-1">
+        <div class="fw-semibold">
+            {% if status == 'Verified' %}Integrity verified
+            {% elif status == 'Tampered' %}Integrity check FAILED: the file has been modified
+            {% elif status == 'Missing' %}The stored file is missing
+            {% else %}Integrity not checked yet{% endif %}
+        </div>
+        <div class="small text-muted">Last checked: {{ evidence.last_verified_at | utc }}</div>
+    </div>
+    <form method="POST" action="{{ url_for('cases.verify', evidence_id=evidence.id) }}">
+        {{ csrf_input() }}
+        <input type="hidden" name="next" value="{{ url_for('cases.evidence_detail', case_id=case.id, evidence_id=evidence.id) }}">
+        <button class="btn btn-sm btn-dark"><i class="bi bi-arrow-repeat me-1"></i>Verify now</button>
+    </form>
+</div>
+
+{% if evidence.extension_mismatch %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-diamond me-1"></i>
+    <strong>Extension mismatch.</strong> The file is a <em>{{ evidence.detected_label }}</em>, which does not match its name.
+    The file was still acquired unchanged and flagged for review.
+</div>
+{% endif %}
+
+<div class="row g-3">
+
+    <div class="col-lg-7">
+        <div class="card mb-3">
+            <div class="card-header">Recorded hashes</div>
+            <div class="card-body">
+                <div class="receipt-hash">
+                    <span class="label">SHA-256</span>
+                    <code>{{ evidence.sha256_hash or 'not recorded' }}</code>
+                    {% if evidence.sha256_hash %}<button type="button" class="hash-copy-btn" data-copy-value="{{ evidence.sha256_hash }}"><i class="bi bi-clipboard"></i></button>{% endif %}
+                </div>
+                <div class="receipt-hash">
+                    <span class="label">MD5</span>
+                    <code>{{ evidence.md5_hash or 'not recorded' }}</code>
+                    {% if evidence.md5_hash %}<button type="button" class="hash-copy-btn" data-copy-value="{{ evidence.md5_hash }}"><i class="bi bi-clipboard"></i></button>{% endif %}
+                </div>
+                <div class="small text-muted">
+                    Recorded {{ evidence.hash_recorded_at | utc }}
+                    ·
+                    {% if evidence.hash_baseline == 'At upload' %}hashed the moment it was uploaded
+                    {% else %}baseline recorded after upload (evidence acquired before hashing was introduced){% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">File details</div>
+            <div class="card-body">
+                <dl class="fc-kv mb-0">
+                    <dt>Original name</dt><dd>{{ evidence.original_filename }}</dd>
+                    <dt>Detected type</dt><dd><span class="kind-chip"><i class="bi {{ kind_icon(evidence) }}"></i>{{ evidence.detected_label or 'Unknown' }}</span></dd>
+                    <dt>MIME type</dt><dd class="mono">{{ evidence.file_type or '—' }}</dd>
+                    <dt>Size</dt><dd>{{ evidence.file_size | filesize }} ({{ evidence.file_size }} bytes)</dd>
+                    <dt>Acquired</dt><dd>{{ evidence.uploaded_at | utc }}</dd>
+                    <dt>Acquired by</dt><dd>{{ uploader.full_name if uploader else '—' }}</dd>
+                    <dt>Status</dt><dd>{{ evidence.status }}</dd>
+                    <dt>Storage</dt><dd>Read-only copy · <span class="mono small">{{ evidence.stored_filename }}</span></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Custody of this evidence</div>
+            <ul class="cu-list">
+                {% for a in entries %}
+                {% set meta = action_meta(a.action) %}
+                <li class="cu-item tone-{{ meta[2] }}">
+                    <div class="cu-icon"><i class="bi {{ meta[1] }}"></i></div>
+                    <div>
+                        <div class="cu-title">{{ meta[0] }}</div>
+                        {% if a.details %}<div class="cu-detail">{{ a.details[:160] }}</div>{% endif %}
+                        <div class="cu-meta">{{ a.created_at | utc }} · {{ a.user_name or 'system' }}</div>
+                    </div>
+                </li>
+                {% else %}
+                <li class="p-4 text-muted">No entries yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

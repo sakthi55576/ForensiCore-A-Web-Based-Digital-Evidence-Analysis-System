@@ -1,0 +1,24 @@
+Delivered-To: victim@examplecorp.com
+Received: by 2002:a05:6512:abcd::1 with SMTP id x10csp123456lfa;
+        Fri, 14 Mar 2026 03:12:44 -0700 (PDT)
+Received: from mail-relay.suspicious-domain.ru (mail-relay.suspicious-domain.ru. [185.23.44.10])
+        by mx.google.com with ESMTPS id y5si987654qkl.90.2026.03.14.03.12.43
+        for <victim@examplecorp.com>;
+        Fri, 14 Mar 2026 03:12:44 -0700 (PDT)
+Received: from internalhost (localhost [127.0.0.1])
+        by mail-relay.suspicious-domain.ru with SMTP id abc123;
+        Fri, 14 Mar 2026 10:12:40 +0000
+Authentication-Results: mx.google.com;
+       spf=fail (google.com: domain of admin@paypal-secure-verify.com does not designate 185.23.44.10 as permitted sender) smtp.mailfrom=admin@paypal-secure-verify.com;
+       dkim=fail header.i=@paypal-secure-verify.com
+Return-Path: <bounce@paypal-secure-verify.com>
+From: "PayPal Security" <admin@paypal.com>
+To: user@examplecorp.com
+Subject: Urgent: Verify your account now
+Date: Fri, 14 Mar 2026 10:12:38 +0000
+Message-ID: <20260314101238.ABCDE@suspicious-domain.ru>
+Content-Type: text/html; charset="UTF-8"
+
+Dear customer,
+
+Your account has been suspended. Click http://paypal-secure-verify.com/login to verify now.

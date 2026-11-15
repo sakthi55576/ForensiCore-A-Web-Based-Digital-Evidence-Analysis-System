@@ -1,0 +1,83 @@
+{# Shared evidence picker used by the three analyzer entry pages.
+   Expects: picker_title, picker_icon, picker_desc, analyze_endpoint,
+            evidence_list, case (or None), picker_types, extra_endpoint (optional) #}
+
+<div class="fc-page-header">
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            {% if case %}
+            <span class="sep">/</span>
+            <a href="{{ url_for('cases.case_details', case_id=case.id) }}">{{ case.case_number }}</a>
+            {% endif %}
+            <span class="sep">/</span>
+            <span>{{ picker_title }}</span>
+        </div>
+        <h1 class="fc-page-title">{{ picker_title }}</h1>
+        <p class="fc-page-subtitle">{{ picker_desc }}</p>
+    </div>
+    {% if case %}
+    <div class="fc-page-actions">
+        <a href="{{ url_for('cases.add_evidence', case_id=case.id) }}" class="btn btn-outline-secondary"><i class="bi bi-upload me-1"></i>Add evidence</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-shield-check me-1"></i>
+    Before analysis ForensiCore re-hashes the file and compares it with the hashes recorded at upload.
+    A modified file is refused, and the analysis reads it in read-only mode.
+    {% if not case %}<br>Tip: open a case first to see only that case's evidence.{% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">Select evidence — {{ picker_types }}</div>
+
+    {% if evidence_list %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>#</th><th>File</th><th>Case</th><th>Integrity</th><th>Status</th><th class="text-end">Action</th></tr>
+            </thead>
+            <tbody>
+            {% for e in evidence_list %}
+                <tr>
+                    <td class="mono text-muted">{{ e.id }}</td>
+                    <td>
+                        <i class="bi {{ picker_icon }} text-muted me-1"></i>
+                        <a class="link-plain fw-semibold" href="{{ url_for('cases.evidence_detail', case_id=e.case_id, evidence_id=e.id) }}">{{ e.original_filename }}</a>
+                        <div class="small text-muted">{{ e.file_size | filesize }} · <span class="mono">{{ e.sha256_hash | shorthash }}</span></div>
+                    </td>
+                    <td class="mono small">{{ e.case.case_number }}</td>
+                    <td>
+                        <span class="int-badge int-{{ e.integrity_status or 'Unchecked' }}">{{ e.integrity_status or 'Unchecked' }}</span>
+                    </td>
+                    <td>{{ e.status }}</td>
+                    <td class="text-end">
+                        {% if extra_endpoint %}
+                        <a href="{{ url_for(extra_endpoint, evidence_id=e.id) }}" class="btn btn-sm btn-outline-secondary">Full history</a>
+                        {% endif %}
+                        {% if e.integrity_status in ['Tampered', 'Missing'] %}
+                        <button class="btn btn-sm btn-primary" disabled>Blocked</button>
+                        {% else %}
+                        <form method="post" action="{{ url_for(analyze_endpoint, evidence_id=e.id) }}" class="d-inline">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-cpu me-1"></i>Analyze</button></form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="fc-empty">
+        <div class="fc-empty-icon"><i class="bi {{ picker_icon }}"></i></div>
+        <h6>No matching evidence</h6>
+        <p>Upload {{ picker_types }} to a case first. The file type is detected from its content.</p>
+        {% if case %}
+        <a href="{{ url_for('cases.add_evidence', case_id=case.id) }}" class="btn btn-primary btn-sm">Add evidence</a>
+        {% else %}
+        <a href="{{ url_for('cases.dashboard') }}" class="btn btn-primary btn-sm">Go to dashboard</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

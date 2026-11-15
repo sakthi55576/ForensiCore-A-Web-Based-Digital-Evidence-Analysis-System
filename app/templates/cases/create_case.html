@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Create Case | ForensiCore{% endblock %}
+
+{% block content %}
+
+<div class="fc-page-header">
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            <span class="sep">/</span>
+            <span>Create Case</span>
+        </div>
+        <h1 class="fc-page-title">Create Investigation Case</h1>
+        <p class="fc-page-subtitle">Open a new case file to begin collecting and analyzing digital evidence.</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+
+                <form method="POST">
+                    {{ csrf_input() }}
+
+                    <div class="mb-3">
+                        <label class="form-label">Case Number</label>
+                        <input
+                            type="text"
+                            class="form-control fc-mono"
+                            value="{{ case_number }}"
+                            readonly>
+                        <div class="form-text">Assigned automatically when the case is created.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Case Title</label>
+                        <input
+                            type="text"
+                            name="case_title"
+                            class="form-control"
+                            placeholder="e.g. Laptop Seizure - Smith Residence"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Investigator Name</label>
+                        <input
+                            type="text"
+                            name="investigator_name"
+                            value="{{ session.get('full_name', '') }}"
+                            class="form-control"
+                            placeholder="Enter investigator name"
+                            required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Case Summary</label>
+                        <textarea
+                            name="case_summary"
+                            class="form-control"
+                            rows="5"
+                            placeholder="Briefly describe the scope and background of this investigation"></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary">
+                            <i class="bi bi-check2-circle me-1"></i> Create Case
+                        </button>
+                        <a href="{{ url_for('cases.dashboard') }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

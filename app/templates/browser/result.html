@@ -1,0 +1,827 @@
+{% extends "base.html" %}
+
+{% block title %}Browser History Analysis Report | ForensiCore{% endblock %}
+
+{% block content %}
+
+<!-- ==========================================
+     REPORT HEADER
+     ========================================== -->
+
+<div class="fc-page-header">
+
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            <span class="sep">/</span>
+            <a href="{{ url_for('browser.upload', case_id=evidence.case_id) }}">Browser Analyzer</a>
+            <span class="sep">/</span>
+            <span>Report</span>
+        </div>
+        <h1 class="fc-page-title">
+            Browser History Analysis Report
+        </h1>
+
+        <p class="fc-page-subtitle">
+            ForensiCore
+        </p>
+    </div>
+
+    <span class="badge bg-light text-dark fs-6">
+        Browser Analysis
+    </span>
+
+</div>
+
+
+<!-- ==========================================
+     EVIDENCE INFORMATION
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header bg-primary text-white">
+        <span class="fc-section-label mb-0">01</span> Evidence Information
+    </div>
+
+
+    <div class="card-body">
+
+        <table class="table table-bordered mb-0">
+
+            <tr>
+
+                <th width="30%">
+                    Evidence ID
+                </th>
+
+                <td class="fc-mono">
+                    {{ evidence.id }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <th>
+                    Case ID
+                </th>
+
+                <td class="fc-mono">
+                    {{ evidence.case_id }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <th>
+                    Evidence File
+                </th>
+
+                <td>
+                    {{ evidence.original_filename }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <th>
+                    Stored File
+                </th>
+
+                <td>
+                    {{ evidence.stored_filename }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <th>
+                    File Type
+                </th>
+
+                <td>
+                    {{ evidence.file_type or "Unknown" }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <th>
+                    File Size
+                </th>
+
+                <td>
+
+                    {% if evidence.file_size %}
+
+                        {{ "%.2f"|format(
+                            evidence.file_size / 1024
+                        ) }}
+                        KB
+
+                    {% else %}
+
+                        Not Available
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <th>
+                    Analysis Status
+                </th>
+
+                <td>
+
+                    <span class="badge bg-success">
+                        Analysis Completed
+                    </span>
+
+                </td>
+
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     BROWSER HISTORY SUMMARY
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">02</span> Browser History Summary
+    </div>
+
+
+    <div class="card-body">
+
+        <table class="table table-bordered mb-0">
+            <tr><th width="30%">URLs analysed</th><td>{{ history_data["Total URLs"] }} <span class="text-muted small">(every URL in the database, not a sample)</span></td></tr>
+            <tr><th>Recorded visits</th><td>{{ history_data.get("Total Visits", 0) }} <span class="text-muted small">({{ history_data.get("Typed Visits", 0) }} typed directly in the address bar)</span></td></tr>
+            <tr><th>Downloads</th><td>{{ history_data.get("Total Downloads", 0) }}</td></tr>
+            <tr><th>Search terms</th><td>{{ history_data.get("Total Searches", 0) }}</td></tr>
+            <tr><th>First activity</th><td>{{ history_data.get("First Activity (UTC)", "n/a") }} UTC</td></tr>
+            <tr><th>Last activity</th><td>{{ history_data.get("Last Activity (UTC)", "n/a") }} UTC</td></tr>
+            <tr><th>Time zone</th><td>All times are shown in <strong>UTC</strong> as stored by Chrome.</td></tr>
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     TOP VISITED WEBSITES
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">03</span> Top Visited Websites
+    </div>
+
+
+    <div class="card-body p-0">
+
+        {% if top_sites %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover mb-0">
+
+                <thead>
+
+                    <tr>
+
+                        <th width="10%">
+                            Rank
+                        </th>
+
+                        <th>
+                            Website / URL
+                        </th>
+
+                        <th width="20%">
+                            Visit Count
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for site in top_sites %}
+
+                    <tr>
+
+                        <td class="fc-mono text-muted">
+                            {{ loop.index }}
+                        </td>
+
+                        <td style="word-break: break-all;">
+                            {{ site["URL"] }}
+                        </td>
+
+                        <td>
+                            {{ site["Visit Count"] }}
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="fc-empty">
+            <div class="fc-empty-icon"><i class="bi bi-globe2"></i></div>
+            <p class="mb-0">No browsing records available.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     ACTIVITY PATTERN
+     ========================================== -->
+
+{% set hourly = history_data.get("Hourly Activity") or [] %}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><span class="fc-section-label mb-0">04</span> Activity Pattern (UTC)</div>
+    <div class="card-body">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="small text-muted mb-2">Visits per hour of day (UTC)</div>
+                {% if hourly %}
+                {% set hmax = (hourly | max) or 1 %}
+                <div class="hour-chart" role="img" aria-label="Visits per hour of day (UTC)">
+                    {% for count in hourly %}
+                    <div class="bar {% if count == 0 %}zero{% endif %}"
+                         style="height: {{ [ (count / hmax * 100) | round(0) | int, 2 ] | max }}%;"
+                         title="{{ '%02d' % loop.index0 }}:00 UTC - {{ count }} visit(s)"></div>
+                    {% endfor %}
+                </div>
+                <div class="hour-axis">
+                    {% for count in hourly %}<span>{% if loop.index0 % 3 == 0 %}{{ '%02d' % loop.index0 }}{% endif %}</span>{% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No visit records available.</p>
+                {% endif %}
+            </div>
+            <div class="col-lg-5">
+                <div class="small text-muted mb-2">Most visited domains</div>
+                {% for d in history_data.get("Top Domains", []) %}
+                <div class="d-flex justify-content-between border-bottom py-1 small">
+                    <span class="text-break">{{ d["Domain"] }}</span>
+                    <span class="text-muted">{{ d["Visits"] }}</span>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No domain data.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ==========================================
+     DOWNLOADS
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><span class="fc-section-label mb-0">05</span> Downloads ({{ history_data.get("Total Downloads", 0) }})</div>
+    <div class="card-body p-0">
+        {% if history_data.get("Downloads") %}
+        <div style="max-height: 380px; overflow-y: auto;">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th width="20%">Time (UTC)</th><th>File</th><th>Source page</th><th width="12%">Size</th></tr></thead>
+                    <tbody>
+                    {% for d in history_data["Downloads"] %}
+                        <tr>
+                            <td class="text-nowrap">{{ d["Time"] }}</td>
+                            <td class="text-break">
+                                {{ d["File"] }}
+                                {% if d["Danger Type"] in [1, 2, 3, 7, 8] %}<span class="sev-chip sev-HIGH ms-1">Browser-flagged</span>{% endif %}
+                            </td>
+                            <td class="text-break small text-muted">{{ d["Source"] }}</td>
+                            <td class="text-nowrap">{{ d["Size"] | filesize }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-3 text-muted">No downloads recorded in this history file.</div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- ==========================================
+     SEARCH TERMS
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><span class="fc-section-label mb-0">06</span> Search Terms ({{ history_data.get("Total Searches", 0) }})</div>
+    <div class="card-body p-0">
+        {% if history_data.get("Searches") %}
+        <div style="max-height: 320px; overflow-y: auto;">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th width="22%">Time (UTC)</th><th>Search term</th></tr></thead>
+                    <tbody>
+                    {% for q in history_data["Searches"] %}
+                        <tr><td class="text-nowrap">{{ q["Time"] }}</td><td class="text-break">{{ q["Term"] }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-3 text-muted">No search terms recorded.</div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- ==========================================
+     BROWSING TIMELINE
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">07</span> Browsing Timeline
+    </div>
+
+
+    <div class="card-body p-0">
+
+        {% if timeline %}
+
+        <div style="max-height: 450px; overflow-y: auto;">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover mb-0">
+
+                    <thead>
+
+                        <tr>
+
+                            <th width="20%">
+                                Visit time (UTC)
+                            </th>
+
+                            <th>
+                                Website / URL
+                            </th>
+
+                            <th>
+                                Page Title
+                            </th>
+
+                            <th width="12%">
+                                Visits
+                            </th>
+
+                            <th width="12%">
+                                Opened by
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    {% for item in timeline %}
+
+                        <tr>
+
+                            <td class="text-nowrap">
+                                {{ item["Last Visit"] }}
+                            </td>
+
+                            <td style="word-break: break-all;">
+                                {{ item["URL"] }}
+                            </td>
+
+                            <td>
+                                {{ item["Title"] }}
+                            </td>
+
+                            <td>
+                                {{ item["Visit Count"] }}
+                            </td>
+                            <td>{{ item.get("Transition", "") }}</td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+        {% else %}
+
+        <div class="fc-empty">
+            <div class="fc-empty-icon"><i class="bi bi-clock-history"></i></div>
+            <p class="mb-0">No browsing timeline available.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     EVIDENCE INTEGRITY
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">08</span> Evidence Integrity
+    </div>
+
+
+    <div class="card-body">
+
+        <table class="table table-bordered mb-3">
+
+            <tr>
+
+                <th width="30%">
+                    Evidence File
+                </th>
+
+                <td>
+                    {{ evidence.original_filename }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+                <th>Hash algorithms</th>
+                <td>MD5 + SHA-256 (recorded when the evidence was acquired)</td>
+            </tr>
+            <tr>
+                <th>Integrity</th>
+                <td>
+                    <span class="int-badge int-{{ evidence.integrity_status or "Unchecked" }}">{{ evidence.integrity_status }}</span>
+                    <span class="text-muted small ms-2">re-verified just before this analysis ran</span>
+                </td>
+            </tr>
+            <tr>
+                <th>Analysis mode</th>
+                <td>Evidence opened read-only; the file was not modified.</td>
+            </tr>
+
+        </table>
+
+        <div class="hash-row mb-2">
+            <span class="hash-label">MD5</span>
+            <span class="hash-value">{{ md5_hash }}</span>
+            <button type="button" class="hash-copy-btn" data-copy-value="{{ md5_hash }}" title="Copy MD5">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
+        <div class="hash-row">
+            <span class="hash-label">SHA-256</span>
+            <span class="hash-value">{{ file_hash }}</span>
+            <button type="button" class="hash-copy-btn" data-copy-value="{{ file_hash }}" title="Copy SHA-256">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     RISK ASSESSMENT
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">09</span> Browser Risk Assessment
+    </div>
+
+
+    <div class="card-body">
+
+
+        <!-- Risk Score -->
+
+        <div class="text-center mb-4">
+
+            <div class="text-muted">
+                Risk Score
+            </div>
+
+            <div class="risk-score-display risk-{{ risk_data['Risk Level'] }}">
+
+                {{ risk_data["Risk Score"] }}
+
+                <span class="fs-5 text-muted">
+                    / 100
+                </span>
+
+            </div>
+
+
+            <div class="mt-2">
+                {% if risk_data["Risk Level"] == "HIGH" %}
+
+                    <span class="risk-badge risk-HIGH"><span class="dot"></span> HIGH</span>
+
+                {% elif risk_data["Risk Level"] == "MEDIUM" %}
+
+                    <span class="risk-badge risk-MEDIUM"><span class="dot"></span> MEDIUM</span>
+
+                {% else %}
+
+                    <span class="risk-badge risk-LOW"><span class="dot"></span> LOW</span>
+
+                {% endif %}
+            </div>
+
+        </div>
+
+
+        <!-- Risk Progress -->
+
+        <div class="risk-meter mb-4">
+            <div class="risk-meter-fill risk-{{ risk_data['Risk Level'] }}"
+                 style="width: {{ risk_data['Risk Score'] }}%;"
+                 role="progressbar"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="{{ risk_data['Risk Score'] }}">
+            </div>
+        </div>
+
+
+        <!-- Risk Scale -->
+
+        <div class="alert alert-secondary">
+
+            <strong>
+                Risk Scale:
+            </strong>
+
+            <br>
+
+            <span style="color: var(--fc-low);">
+                LOW: 0&ndash;39
+            </span>
+
+            &nbsp;|&nbsp;
+
+            <span style="color: var(--fc-medium);">
+                MEDIUM: 40&ndash;69
+            </span>
+
+            &nbsp;|&nbsp;
+
+            <span style="color: var(--fc-high);">
+                HIGH: 70&ndash;100
+            </span>
+
+        </div>
+
+
+        <!-- ======================================
+             RISK BREAKDOWN
+             ====================================== -->
+
+        <h6 class="fw-bold mt-4 mb-3">
+            Risk Breakdown
+        </h6>
+
+
+        {% if risk_data.get("Risk Breakdown") %}
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Risk Factor
+                        </th>
+
+                        <th width="15%">
+                            Score
+                        </th>
+
+                        <th width="15%">
+                            Maximum
+                        </th>
+
+                        <th>
+                            Observation
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for item in risk_data["Risk Breakdown"] %}
+
+                    <tr>
+
+                        <td>
+                            <strong>
+                                {{ item["Factor"] }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ item["Score"] }}
+                        </td>
+
+                        <td>
+                            {{ item["Maximum"] }}
+                        </td>
+
+                        <td>
+                            {{ item["Observation"] }}
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <p class="text-muted">
+            No risk breakdown available.
+        </p>
+
+        {% endif %}
+
+
+        <!-- ======================================
+             RISK INDICATORS
+             ====================================== -->
+
+        <h6 class="fw-bold mt-4 mb-3">
+            Risk Indicators
+        </h6>
+
+
+        <ul>
+
+        {% for finding in risk_data["Findings"] %}
+
+            <li class="mb-2">
+                {{ finding }}
+            </li>
+
+        {% endfor %}
+
+        </ul>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     FORENSIC INTERPRETATION
+     ========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">10</span> Forensic Interpretation
+    </div>
+
+
+    <div class="card-body">
+
+        <p class="mb-0">
+
+            {{ risk_data.get(
+                "Forensic Interpretation",
+                "The browser risk score represents "
+                "observable indicators identified "
+                "from the available browser-history "
+                "records."
+            ) }}
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================
+     REPORT NOTE
+     ========================================== -->
+
+<div class="alert alert-info">
+
+    <strong>Forensic Note:</strong>
+
+    Browser-history indicators are investigative
+    observations. The risk score does not independently
+    prove malicious activity or user intent.
+
+</div>
+
+
+<!-- ==========================================
+     FINAL ACTION BUTTONS
+     ========================================== -->
+
+<div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+
+    <!-- View Full History -->
+    <a
+        href="{{ url_for('browser.full_history', evidence_id=evidence.id) }}"
+        class="btn btn-primary"
+    >
+        <i class="bi bi-clock-history me-1"></i> View Full History
+    </a>
+
+    <!-- Analyze Another Evidence -->
+    <a
+        href="{{ url_for('browser.upload', case_id=evidence.case_id) }}"
+        class="btn btn-secondary"
+    >
+        <i class="bi bi-arrow-repeat me-1"></i> Analyze Another Evidence
+    </a>
+
+    <!-- Back to Case -->
+    <a
+        href="{{ url_for('cases.case_details', case_id=evidence.case_id) }}"
+        class="btn btn-dark"
+    >
+        <i class="bi bi-folder2 me-1"></i> Back to Case
+    </a>
+
+</div>
+
+{% endblock %}

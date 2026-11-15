@@ -1,0 +1,1059 @@
+{% extends "base.html" %}
+
+{% block title %}Email Analysis Report | ForensiCore{% endblock %}
+
+{% block content %}
+
+<!-- ===================================== -->
+<!-- HEADER -->
+<!-- ===================================== -->
+
+<div class="fc-page-header">
+
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            <span class="sep">/</span>
+            <a href="{{ url_for('email.upload', case_id=evidence.case_id) }}">Email Analyzer</a>
+            <span class="sep">/</span>
+            <span>Report</span>
+        </div>
+        <h1 class="fc-page-title">
+            Digital Evidence Analysis Report
+        </h1>
+
+        <p class="fc-page-subtitle">
+            Email Header Analysis Module
+        </p>
+
+    </div>
+
+
+    <a href="{{ url_for('email.upload', case_id=evidence.case_id) }}"
+       class="btn btn-outline-secondary">
+
+        <i class="bi bi-arrow-repeat me-1"></i> Analyze Another Email
+
+    </a>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- FORENSIC ANALYSIS -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header bg-dark text-white">
+        <i class="bi bi-envelope-exclamation me-2"></i>Forensic Analysis
+    </div>
+
+
+    <div class="card-body">
+
+        <p class="text-muted mb-1">
+            Evidence File
+        </p>
+
+
+        <h4>
+
+            {{ email_data.get(
+                "File Name",
+                "Not Available"
+            ) }}
+
+        </h4>
+
+
+        {% if evidence %}
+
+            <p class="text-muted mb-0 fc-mono">
+
+                Evidence ID: {{ evidence.id }}
+
+                |
+
+                Case ID: {{ evidence.case_id }}
+
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 1. HEADER INFORMATION -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">01</span> Sender Information &amp; Email Headers
+    </div>
+
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered mb-0">
+
+                <tbody>
+
+
+                    <tr>
+
+                        <th width="30%">
+                            From
+                        </th>
+
+                        <td>
+                            {{ email_data.get(
+                                "From",
+                                "Not Available"
+                            ) }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <th>
+                            To
+                        </th>
+
+                        <td>
+                            {{ email_data.get(
+                                "To",
+                                "Not Available"
+                            ) }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <th>
+                            Subject
+                        </th>
+
+                        <td>
+                            {{ email_data.get(
+                                "Subject",
+                                "Not Available"
+                            ) }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <th>
+                            Date
+                        </th>
+
+                        <td>
+                            {{ email_data.get(
+                                "Date",
+                                "Not Available"
+                            ) }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <th>
+                            Return-Path
+                        </th>
+
+                        <td>
+                            {{ email_data.get(
+                                "Return-Path",
+                                "Not Available"
+                            ) }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <th>
+                            Message-ID
+                        </th>
+
+                        <td class="fc-mono" style="word-break: break-all;">
+
+                            {{ email_data.get(
+                                "Message-ID",
+                                "Not Available"
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 2. EMAIL AUTHENTICATION -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">02</span> Authentication Results &mdash; SPF / DKIM / DMARC
+    </div>
+
+
+    <div class="card-body">
+
+        <div class="row">
+
+
+            <!-- SPF -->
+
+            <div class="col-md-4 mb-3">
+
+                <div class="fc-panel p-3">
+
+                    <strong>
+                        SPF
+                    </strong>
+
+
+                    <div class="mt-2">
+
+                        {% if email_data.get("SPF") == "PASS" %}
+
+                            <span class="state-chip state-pass"><i class="bi bi-check-circle"></i> PASS</span>
+
+                        {% elif email_data.get("SPF") == "FAIL" %}
+
+                            <span class="state-chip state-fail"><i class="bi bi-x-circle"></i> FAIL</span>
+
+                        {% else %}
+
+                            <span class="state-chip state-unknown"><i class="bi bi-question-circle"></i>
+                                {{ (email_data.get("SPF") or "NOT FOUND") | upper }}</span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- DKIM -->
+
+            <div class="col-md-4 mb-3">
+
+                <div class="fc-panel p-3">
+
+                    <strong>
+                        DKIM
+                    </strong>
+
+
+                    <div class="mt-2">
+
+                        {% if email_data.get("DKIM") == "PASS" %}
+
+                            <span class="state-chip state-pass"><i class="bi bi-check-circle"></i> PASS</span>
+
+                        {% elif email_data.get("DKIM") == "FAIL" %}
+
+                            <span class="state-chip state-fail"><i class="bi bi-x-circle"></i> FAIL</span>
+
+                        {% else %}
+
+                            <span class="state-chip state-unknown"><i class="bi bi-question-circle"></i>
+                                {{ (email_data.get("DKIM") or "NOT FOUND") | upper }}</span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- DMARC -->
+
+            <div class="col-md-4 mb-3">
+
+                <div class="fc-panel p-3">
+
+                    <strong>
+                        DMARC
+                    </strong>
+
+
+                    <div class="mt-2">
+
+                        {% if email_data.get("DMARC") == "PASS" %}
+
+                            <span class="state-chip state-pass"><i class="bi bi-check-circle"></i> PASS</span>
+
+                        {% elif email_data.get("DMARC") == "FAIL" %}
+
+                            <span class="state-chip state-fail"><i class="bi bi-x-circle"></i> FAIL</span>
+
+                        {% else %}
+
+                            <span class="state-chip state-unknown"><i class="bi bi-question-circle"></i>
+                                {{ (email_data.get("DMARC") or "NOT FOUND") | upper }}</span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="alert alert-info mb-0">
+
+            SPF, DKIM and DMARC results provide email authentication
+            indicators. A failed authentication check is treated
+            as a risk indicator by the analysis engine.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 3. RECEIVED / SENDER IP -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">03</span> Sender IP Analysis
+    </div>
+
+
+    <div class="card-body">
+
+
+        {% if email_data.get("Sender IP") %}
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered mb-0">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                IP Address
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for ip in email_data.get(
+                            "Sender IP",
+                            []
+                        ) %}
+
+                            <tr>
+
+                                <td class="fc-mono">
+                                    {{ ip }}
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="alert alert-warning mb-0">
+
+                No public sender IP found.
+
+            </div>
+
+        {% endif %}
+
+
+        {% if email_data.get("Received") %}
+
+            <hr>
+
+            <h6>
+                Received Headers
+            </h6>
+
+
+            <div class="fc-panel p-3">
+
+                {% for received in email_data.get(
+                    "Received",
+                    []
+                ) %}
+
+                    <div class="mb-2 fc-mono small">
+                        {{ received }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 4. IP GEOLOCATION -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">04</span> IP Geolocation
+    </div>
+
+
+    <div class="card-body">
+
+
+        {% if email_data.get("IP Location") %}
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered mb-0">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>IP</th>
+
+                            <th>Country</th>
+
+                            <th>Region</th>
+
+                            <th>City</th>
+
+                            <th>ISP</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for location in email_data.get(
+                            "IP Location",
+                            []
+                        ) %}
+
+                            <tr>
+
+                                <td class="fc-mono">
+                                    {{ location.get(
+                                        "IP",
+                                        "Unknown"
+                                    ) }}
+                                </td>
+
+                                <td>
+                                    {{ location.get(
+                                        "Country",
+                                        "Unknown"
+                                    ) }}
+                                </td>
+
+                                <td>
+                                    {{ location.get(
+                                        "Region",
+                                        "Unknown"
+                                    ) }}
+                                </td>
+
+                                <td>
+                                    {{ location.get(
+                                        "City",
+                                        "Unknown"
+                                    ) }}
+                                </td>
+
+                                <td>
+                                    {{ location.get(
+                                        "ISP",
+                                        "Unknown"
+                                    ) }}
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="alert alert-secondary mb-0">
+
+                No public IP geolocation information available.
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 5. EVIDENCE INTEGRITY -->
+<!-- ===================================== -->
+<!-- LINKS, ATTACHMENTS, REPLY-TO -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <span class="fc-section-label mb-0">+</span> Message Content &mdash; Links &amp; Attachments
+    </div>
+    <div class="card-body">
+
+        <dl class="fc-kv">
+            <dt>Reply-To</dt><dd>{{ email_data.get("Reply-To", "Not Available") }}</dd>
+            <dt>Auth results source</dt><dd>{{ email_data.get("Authentication Source", "—") }}</dd>
+        </dl>
+
+        <h6 class="mt-3">Attachments ({{ email_data.get("Attachments", []) | length }})</h6>
+        {% if email_data.get("Attachments") %}
+        <div class="table-responsive mb-3">
+            <table class="table table-sm">
+                <thead><tr><th>File</th><th>Type</th><th>Size</th><th>SHA-256</th><th>Flag</th></tr></thead>
+                <tbody>
+                {% for a in email_data.get("Attachments") %}
+                    <tr>
+                        <td>{{ a.name }}</td>
+                        <td class="small">{{ a.type }}</td>
+                        <td>{{ a.size | filesize }}</td>
+                        <td class="mono small">{{ a.sha256 | shorthash }}</td>
+                        <td>
+                            {% if a.double_extension %}<span class="sev-chip sev-MEDIUM">DOUBLE EXT</span>
+                            {% elif a.dangerous %}<span class="sev-chip sev-HIGH">DANGEROUS</span>
+                            {% else %}<span class="sev-chip sev-LOW">OK</span>{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No attachments.</p>
+        {% endif %}
+
+        <h6>Links in the message body ({{ email_data.get("Links", []) | length }})</h6>
+        {% if email_data.get("Links") %}
+        <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+            <table class="table table-sm">
+                <thead><tr><th>Link</th><th>Shown text</th><th>Finding</th></tr></thead>
+                <tbody>
+                {% for l in email_data.get("Links") %}
+                    <tr>
+                        <td class="small" style="overflow-wrap:anywhere;">{{ l.url[:110] }}</td>
+                        <td class="small">{{ l.text or "—" }}</td>
+                        <td>{% if l.problems %}<span class="sev-chip sev-MEDIUM">{{ l.problems[0] }}</span>{% else %}<span class="text-muted small">none</span>{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No links.</p>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">05</span> Evidence Integrity &mdash; File Hash
+    </div>
+
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered mb-3">
+
+                <tbody>
+
+                    <tr>
+
+                        <th width="30%">
+                            File Name
+                        </th>
+
+                        <td>
+                            {{ email_data.get(
+                                "File Name",
+                                "Not Available"
+                            ) }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <th>
+                            Hash Algorithm
+                        </th>
+
+                        <td>
+                            {{ email_data.get(
+                                "Hash Algorithm",
+                                "SHA-256"
+                            ) }}
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="hash-row">
+            <span class="hash-label">SHA-256</span>
+            <span class="hash-value">{{ email_data.get("File Hash", "Not Available") }}</span>
+            <button type="button" class="hash-copy-btn" data-copy-value="{{ email_data.get('File Hash', 'Not Available') }}" title="Copy SHA-256">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
+
+
+        <div class="hash-row">
+            <span class="hash-label">MD5</span>
+            <span class="hash-value">{{ email_data.get("MD5") or "Not Available" }}</span>
+            <button type="button" class="hash-copy-btn" data-copy-value="{{ email_data.get('MD5') or '' }}" title="Copy MD5">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
+
+        <div class="mt-3">
+            <span class="int-badge int-{{ evidence.integrity_status or 'Unchecked' }}">
+                <i class="bi bi-shield-check"></i> Integrity {{ evidence.integrity_status or 'Unchecked' }}
+            </span>
+            <span class="small text-muted ms-2">Re-verified {{ evidence.last_verified_at | utc }} before this analysis.</span>
+        </div>
+
+        <div class="alert alert-info mb-0 mt-3">
+
+            <strong>Integrity Principle:</strong>
+
+            The SHA-256 hash provides a fingerprint of the stored
+            email evidence. If the file is unchanged, the same
+            hash should be produced during repeated analysis.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 6. SECURITY FINDINGS -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">06</span> Findings &mdash; Spoofing Indicators
+    </div>
+
+
+    <div class="card-body">
+
+
+        {% if email_data.get("Findings") %}
+
+            <ul class="mb-0">
+
+                {% for item in email_data.get(
+                    "Findings",
+                    []
+                ) %}
+
+                    <li class="mb-2">
+                        {{ item }}
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <div class="alert alert-success mb-0">
+
+                No significant email security findings were detected.
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- 7. EMAIL RISK ASSESSMENT -->
+<!-- ===================================== -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <span class="fc-section-label mb-0">07</span> Risk Assessment
+    </div>
+
+
+    <div class="card-body">
+
+
+        <!-- SCORE -->
+
+        <div class="text-center mb-4">
+
+            <p class="text-muted mb-1">
+                Overall Email Risk Score
+            </p>
+
+
+            <div class="risk-score-display risk-{{ email_data.get('Risk Level', 'LOW') }}">
+                {{ email_data.get("Risk Score", 0) }}<span class="fs-4 text-muted"> / 100</span>
+            </div>
+
+            <div class="mt-2">
+                {% if email_data.get("Risk Level") == "HIGH" %}
+
+                    <span class="risk-badge risk-HIGH"><span class="dot"></span> HIGH RISK</span>
+
+                {% elif email_data.get("Risk Level") == "MEDIUM" %}
+
+                    <span class="risk-badge risk-MEDIUM"><span class="dot"></span> MEDIUM RISK</span>
+
+                {% else %}
+
+                    <span class="risk-badge risk-LOW"><span class="dot"></span> LOW RISK</span>
+
+                {% endif %}
+            </div>
+
+        </div>
+
+
+        <!-- RISK SCALE -->
+
+        <div class="mb-4">
+
+            <div class="d-flex justify-content-between text-muted small">
+
+                <span>
+                    LOW
+                </span>
+
+                <span>
+                    MEDIUM
+                </span>
+
+                <span>
+                    HIGH
+                </span>
+
+            </div>
+
+
+            <div class="risk-meter">
+                <div class="risk-meter-fill risk-{{ email_data.get('Risk Level', 'LOW') }}"
+                     style="width: {{ email_data.get('Risk Score', 0) }}%;"
+                     role="progressbar"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ email_data.get('Risk Score', 0) }}">
+                </div>
+            </div>
+
+
+            <div class="d-flex justify-content-between text-muted small mt-1">
+
+                <span>
+                    0&ndash;39
+                </span>
+
+                <span>
+                    40&ndash;69
+                </span>
+
+                <span>
+                    70&ndash;100
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <hr>
+
+
+        <!-- RISK BREAKDOWN -->
+
+        <h5 class="mb-3">
+            Risk Breakdown
+        </h5>
+
+
+        {% if email_data.get("Risk Breakdown") %}
+
+            {% for item in email_data.get(
+                "Risk Breakdown",
+                []
+            ) %}
+
+                <div class="border rounded p-3 mb-3">
+
+
+                    <div class="d-flex
+                                justify-content-between
+                                align-items-center">
+
+                        <strong>
+                            {{ item.get(
+                                "category",
+                                "Analysis"
+                            ) }}
+                        </strong>
+
+
+                        <strong>
+
+                            +{{ item.get(
+                                "points",
+                                0
+                            ) }}
+
+                        </strong>
+
+                    </div>
+
+
+                    <div class="mt-2">
+
+
+                        {% if item.get("points", 0) > 0 %}
+
+                            <span class="badge bg-warning text-dark">
+
+                                {{ item.get(
+                                    "status",
+                                    "Indicator"
+                                ) }}
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+
+                                {{ item.get(
+                                    "status",
+                                    "Informational"
+                                ) }}
+
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <p class="text-muted small mb-0 mt-2">
+
+                        {{ item.get(
+                            "reason",
+                            "No additional information available."
+                        ) }}
+
+                    </p>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="alert alert-secondary">
+
+                Risk breakdown information is not available.
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- TOTAL -->
+
+        <div class="fc-panel p-3 mb-4">
+
+            <div class="d-flex justify-content-between">
+
+                <strong>
+                    Total Email Risk Score
+                </strong>
+
+                <strong>
+
+                    {{ email_data.get(
+                        "Risk Score",
+                        0
+                    ) }}
+
+                    / 100
+
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- RISK INDICATORS -->
+
+        <h5 class="mb-3">
+            Risk Indicators
+        </h5>
+
+
+        {% if email_data.get("Findings") %}
+
+            <ul>
+
+                {% for item in email_data.get(
+                    "Findings",
+                    []
+                ) %}
+
+                    <li class="mb-2">
+                        {{ item }}
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% endif %}
+
+
+        <!-- FORENSIC INTERPRETATION -->
+
+        <div class="alert alert-info mt-4 mb-0">
+
+            <strong>
+                Forensic Interpretation:
+            </strong>
+
+            The email risk score represents authentication and
+            header-based indicators identified during analysis.
+            It does not by itself prove that an email is malicious,
+            fraudulent, or spoofed.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- FOOTER -->
+<!-- ===================================== -->
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-2 flex-wrap gap-2">
+
+    <a href="{{ url_for('cases.dashboard') }}"
+       class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+
+    <div class="d-flex flex-wrap gap-2">
+
+        <a href="{{ url_for('cases.case_details', case_id=evidence.case_id) }}"
+           class="btn btn-dark">
+            <i class="bi bi-folder2 me-1"></i> Back to Case
+        </a>
+
+        <a href="{{ url_for('email.upload', case_id=evidence.case_id) }}"
+           class="btn btn-primary">
+            <i class="bi bi-arrow-repeat me-1"></i> Analyze Another Email
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Full Browser History | ForensiCore{% endblock %}
+
+{% block content %}
+
+<div class="fc-page-header">
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            <span class="sep">/</span>
+            <a href="{{ url_for('browser.upload', case_id=evidence.case_id) }}">Browser Analyzer</a>
+            <span class="sep">/</span>
+            <span>Full History</span>
+        </div>
+        <h1 class="fc-page-title">Full Browser History</h1>
+        <p class="fc-page-subtitle">
+
+            Total Records:
+            {{ history_data["Total URLs"] }}
+            {% if history_data["Total URLs"] > limit %}<span class="text-muted small">(showing the {{ limit }} most recent)</span>{% endif %}
+
+        </p>
+    </div>
+
+    <div class="fc-page-actions">
+        {% if evidence %}
+        <a href="{{ url_for('cases.case_details', case_id=evidence.case_id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-folder2 me-1"></i> Back to Case
+        </a>
+        {% endif %}
+        <a href="{{ url_for('browser.upload', case_id=evidence.case_id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-repeat me-1"></i> Analyze Another History
+        </a>
+    </div>
+</div>
+
+
+<div class="card shadow-sm">
+
+    <div class="card-body p-0">
+
+        <div style="max-height: 650px; overflow-y: auto;">
+
+            <table class="table table-hover mb-0">
+
+                <thead>
+
+                    <tr>
+                        <th>#</th>
+                        <th>URL</th>
+                        <th>Title</th>
+                        <th>Visit Count</th>
+                        <th>Last Visit</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for item in history_data["History"] %}
+
+                    <tr>
+                        <td class="fc-mono text-muted">{{ loop.index }}</td>
+                        <td style="word-break: break-all;">{{ item["URL"] }}</td>
+                        <td>{{ item["Title"] }}</td>
+                        <td>{{ item["Visit Count"] }}</td>
+                        <td class="text-nowrap">{{ item["Last Visit"] }}</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

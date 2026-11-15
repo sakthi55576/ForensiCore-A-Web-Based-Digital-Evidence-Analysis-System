@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Login | ForensiCore{% endblock %}
+
+{% block content %}
+
+<div class="fc-auth-shell">
+    <div class="fc-auth-card">
+
+        <div class="fc-auth-brand">
+            <div class="fc-brand-icon">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h1>ForensiCore</h1>
+            <p class="fw-semibold mb-1">A Digital Evidence Analyzer</p>
+            <p>Sign in to your investigation workspace</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+                    {{ csrf_input() }}
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                    placeholder="Enter Email"
+                    required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <div class="fc-password-wrap">
+                    <input
+                        type="password"
+                        name="password"
+                        id="loginPassword"
+                        class="form-control"
+                        placeholder="Enter Password"
+                        required>
+                    <button type="button" class="fc-password-toggle" data-password-toggle="loginPassword" tabindex="-1" aria-label="Show password">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+            </button>
+
+        </form>
+
+        <p class="fc-auth-foot">
+            Don't have an account?
+            <a href="{{ url_for('auth.register') }}">Register</a>
+        </p>
+
+    </div>
+</div>
+
+{% endblock %}

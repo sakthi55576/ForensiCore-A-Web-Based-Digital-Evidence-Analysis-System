@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}{{ case.case_number }} | ForensiCore{% endblock %}
+
+{% block content %}
+
+{% set ev_by_id = {} %}
+{% for e in evidence_list %}{% set _ = ev_by_id.update({e.id: e}) %}{% endfor %}
+
+{% set tampered = evidence_list | selectattr('integrity_status', 'in', ['Tampered', 'Missing']) | list %}
+{% set counts = {'HIGH': 0, 'MEDIUM': 0, 'LOW': 0, 'INFO': 0} %}
+{% for f in findings %}{% set _ = counts.update({f.severity: counts.get(f.severity, 0) + 1}) %}{% endfor %}
+
+<!-- ===================================================== -->
+<!-- HEADER -->
+<!-- ===================================================== -->
+
+<div class="fc-page-header">
+    <div>
+        <div class="fc-breadcrumb">
+            <a href="{{ url_for('cases.dashboard') }}">Dashboard</a>
+            <span class="sep">/</span>
+            <span>{{ case.case_number }}</span>
+        </div>
+        <h1 class="fc-page-title">{{ case.case_title }}</h1>
+        <p class="fc-page-subtitle">
+            <span class="mono">{{ case.case_number }}</span>
+            · Investigator: {{ case.investigator_name or '—' }}
+            · Opened {{ case.created_at | utc }}
+        </p>
+    </div>
+    <div class="fc-page-actions">
+        <a href="{{ url_for('cases.add_evidence', case_id=case.id) }}" class="btn btn-primary">
+            <i class="bi bi-upload me-1"></i> Add Evidence
+        </a>
+        <a href="{{ url_for('reports.generate_report', case_id=case.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF Report
+        </a>
+    </div>
+</div>
+
+{% if tampered %}
+<div class="alert alert-danger">
+    <i class="bi bi-shield-x me-1"></i>
+    <strong>Integrity alert:</strong>
+    {{ tampered | length }} evidence file(s) no longer match the hashes recorded at acquisition
+    ({% for e in tampered %}{{ e.original_filename }}{% if not loop.last %}, {% endif %}{% endfor %}).
+    Analysis of these files is blocked.
+</div>
+{% endif %}
+
+<!-- ===================================================== -->
+<!-- TABS -->
+<!-- ===================================================== -->
+
+<ul class="nav fc-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">Overview</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-evidence" type="button" role="tab">Evidence<span class="tab-count {% if tampered %}alert-count{% endif %}">{{ evidence_list | length }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-findings" type="button" role="tab">Findings<span class="tab-count">{{ findings | length }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-timeline" type="button" role="tab">Timeline<span class="tab-count">{{ timeline | length }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-custody" type="button" role="tab">Chain of Custody<span class="tab-count">{{ audit_entries | length }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-report" type="button" role="tab">Report</button></li>
+</ul>
+
+<div class="tab-content">
+
+<!-- ===================================================== -->
+<!-- OVERVIEW -->
+<!-- ===================================================== -->
+
+<div class="tab-pane fade show active" id="tab-overview" role="tabpanel">
+
+    <div class="row g-3 mb-3">
+
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header">Case information</div>
+                <div class="card-body">
+                    <dl class="fc-kv mb-0">
+                        <dt>Case number</dt><dd class="mono">{{ case.case_number }}</dd>
+                        <dt>Status</dt><dd>{{ case.status or 'Open' }}</dd>
+                        <dt>Investigator</dt><dd>{{ case.investigator_name or '—' }}</dd>
+                        <dt>Investigation date</dt><dd>{{ case.investigation_date | utc }}</dd>
+                        <dt>Summary</dt><dd>{{ case.case_summary or 'No summary provided.' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Overall risk</span>
+                    <a href="{{ url_for('risk_engine.risk_dashboard', case_id=case.id) }}" class="small">Details</a>
+                </div>
+                <div class="card-body">
+                    {% if risk.overall_level %}
+                    <div class="risk-panel risk-{{ risk.overall_level }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="risk-score-display risk-{{ risk.overall_level }}">{{ risk.overall_score }}<span class="fs-6 text-muted">/100</span></div>
+                            <span class="risk-badge risk-{{ risk.overall_level }}"><span class="dot"></span>{{ risk.overall_level }}</span>
+                        </div>
+                        <div class="risk-meter"><div class="risk-meter-fill risk-{{ risk.overall_level }}" style="width: {{ risk.overall_score }}%"></div></div>
+                        <div class="small text-muted">{{ risk.explanation }}</div>
+                    </div>
+                    {% else %}
+                    <div class="fc-empty py-3">
+                        <div class="fc-empty-icon"><i class="bi bi-shield"></i></div>
+                        <h6>Not assessed yet</h6>
+                        <p>Analyze evidence to get a risk level.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="fc-section-label">Analysis modules</div>
+
+    <div class="row g-3 mb-3">
+        {% for key, m in risk.modules.items() %}
+        <div class="col-md-4">
+            <div class="module-tile {% if not m.analyzed %}not-run{% endif %}">
+                <i class="bi {{ m.icon }} tile-icon"></i>
+                <div class="tile-name">{{ m.label }}</div>
+                {% if m.analyzed %}
+                    <div class="tile-score">{{ m.score }}<span class="fs-6 text-muted">/100</span></div>
+                    <div><span class="risk-badge risk-{{ m.level }}"><span class="dot"></span>{{ m.level }}</span></div>
+                    <div class="small text-muted">{{ m.count }} evidence analyzed{% if m.driver %} · highest: {{ m.driver }}{% endif %}</div>
+                {% else %}
+                    <div class="tile-score">Not analyzed</div>
+                    <div class="small text-muted">No evidence of this type has been analyzed yet.</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if risk.pending %}
+    <div class="alert alert-info">
+        <i class="bi bi-lightbulb me-1"></i>
+        <strong>Next step:</strong> {{ risk.pending | length }} evidence file(s) are waiting for analysis.
+        Open the <a href="#tab-evidence" data-bs-toggle="tab" data-bs-target="#tab-evidence">Evidence tab</a> and press <em>Analyze</em>.
+    </div>
+    {% elif not evidence_list %}
+    <div class="alert alert-info">
+        <i class="bi bi-lightbulb me-1"></i>
+        <strong>Next step:</strong> add your first evidence file. It is hashed (MD5 + SHA-256) the moment it is uploaded.
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ===================================================== -->
+<!-- EVIDENCE -->
+<!-- ===================================================== -->
+
+<div class="tab-pane fade" id="tab-evidence" role="tabpanel">
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Evidence items</span>
+            <a href="{{ url_for('cases.add_evidence', case_id=case.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add</a>
+        </div>
+
+        {% if evidence_list %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>File</th>
+                        <th>Detected type</th>
+                        <th>SHA-256</th>
+                        <th>Integrity</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for e in evidence_list %}
+                    <tr>
+                        <td class="mono text-muted">{{ e.id }}</td>
+                        <td>
+                            <a class="link-plain fw-semibold" href="{{ url_for('cases.evidence_detail', case_id=case.id, evidence_id=e.id) }}">{{ e.original_filename }}</a>
+                            <div class="small text-muted">{{ e.file_size | filesize }} · {{ e.uploaded_at | utc }}</div>
+                        </td>
+                        <td>
+                            <span class="kind-chip"><i class="bi {{ kind_icon(e) }}"></i>{{ e.detected_label or 'Unknown' }}</span>
+                            {% if e.extension_mismatch %}
+                            <div class="small text-danger-fc"><i class="bi bi-exclamation-diamond"></i> extension mismatch</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="mono small">{{ e.sha256_hash | shorthash }}</span>
+                            {% if e.sha256_hash %}
+                            <button type="button" class="hash-copy-btn" data-copy-value="{{ e.sha256_hash }}" title="Copy full SHA-256"><i class="bi bi-clipboard"></i></button>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="int-badge int-{{ e.integrity_status or 'Unchecked' }}">
+                                <i class="bi {% if e.integrity_status == 'Verified' %}bi-shield-check{% elif e.integrity_status in ['Tampered','Missing'] %}bi-shield-x{% else %}bi-shield-exclamation{% endif %}"></i>
+                                {{ e.integrity_status or 'Unchecked' }}
+                            </span>
+                            <div class="small text-muted">{{ e.last_verified_at | utc }}</div>
+                        </td>
+                        <td class="text-end">
+                            <form method="POST" action="{{ url_for('cases.verify', evidence_id=e.id) }}" class="d-inline">
+                                {{ csrf_input() }}
+                                <input type="hidden" name="next" value="{{ url_for('cases.case_details', case_id=case.id) }}#tab-evidence">
+                                <button class="btn btn-sm btn-outline-secondary" title="Re-hash the file and compare with the recorded hashes"><i class="bi bi-shield-check me-1"></i>Verify</button>
+                            </form>
+                            {% set analyzer = analyzer_for(e) %}
+                            {% if analyzer and e.integrity_status not in ['Tampered', 'Missing'] %}
+                            <form method="post" action="{{ url_for(analyzer[0], evidence_id=e.id) }}" class="d-inline">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-primary" title="{{ analyzer[1] }}"><i class="bi bi-cpu me-1"></i>Analyze</button></form>
+                            {% elif analyzer %}
+                            <button class="btn btn-sm btn-primary" disabled title="Blocked: integrity check failed"><i class="bi bi-slash-circle me-1"></i>Blocked</button>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-secondary" disabled title="No analyzer for this file type">No analyzer</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="fc-empty">
+            <div class="fc-empty-icon"><i class="bi bi-folder2-open"></i></div>
+            <h6>No evidence yet</h6>
+            <p>Upload a photo, an .eml email or a Chrome/Edge History file.</p>
+            <a href="{{ url_for('cases.add_evidence', case_id=case.id) }}" class="btn btn-primary btn-sm">Add evidence</a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- FINDINGS -->
+<!-- ===================================================== -->
+
+<div class="tab-pane fade" id="tab-findings" role="tabpanel">
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="filter-chip active" data-filter-group="findings" data-filter="ALL">All ({{ findings | length }})</button>
+        <button class="filter-chip" data-filter-group="findings" data-filter="HIGH">High ({{ counts.HIGH }})</button>
+        <button class="filter-chip" data-filter-group="findings" data-filter="MEDIUM">Medium ({{ counts.MEDIUM }})</button>
+        <button class="filter-chip" data-filter-group="findings" data-filter="LOW">Low ({{ counts.LOW }})</button>
+        <button class="filter-chip" data-filter-group="findings" data-filter="INFO">Info ({{ counts.INFO }})</button>
+    </div>
+
+    <div class="card">
+        {% for f in findings %}
+        <div class="finding-row" data-filter-item="findings" data-filter-value="{{ f.severity }}">
+            <span class="sev-chip sev-{{ f.severity }}">{{ f.severity }}</span>
+            <div class="flex-grow-1">
+                <div class="finding-title">{{ f.title }}</div>
+                {% if f.detail %}<div class="finding-detail">{{ f.detail }}</div>{% endif %}
+                <div class="finding-meta">
+                    <span class="module-chip">{{ f.module }}</span>
+                    {% set fe = ev_by_id.get(f.evidence_id) %}
+                    {% if fe %}· {{ fe.original_filename }}{% endif %}
+                    {% if f.points %}· +{{ f.points }} pts{% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="fc-empty">
+            <div class="fc-empty-icon"><i class="bi bi-search"></i></div>
+            <h6>No findings yet</h6>
+            <p>Findings from the analyzers appear here in one list.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <p class="small text-muted mt-2">A finding is an indicator for review, not proof of wrongdoing.</p>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- TIMELINE -->
+<!-- ===================================================== -->
+
+<div class="tab-pane fade" id="tab-timeline" role="tabpanel">
+
+    {% if correlations %}
+    <div class="fc-section-label">Cross-evidence correlations</div>
+    {% for c in correlations %}
+    <div class="correlation-card">
+        <div class="fw-semibold"><i class="bi bi-diagram-3 me-1"></i>{{ c.anchor.title }}</div>
+        <div class="small text-muted mb-1">{{ c.anchor.event_time | utc }} · {{ c.count }} event(s) from other evidence within {{ c.window }} minutes</div>
+        {% for n in c.nearby[:3] %}
+        <div class="small">→ <span class="module-chip">{{ n.module }}</span> {{ n.title }} <span class="text-muted">({{ n.event_time | utc }})</span></div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    <p class="small text-muted">These are leads, not proof: clocks on different devices can be off.</p>
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-2 mb-3 mt-3">
+        <button class="filter-chip active" data-filter-group="timeline" data-filter="ALL">All modules</button>
+        <button class="filter-chip" data-filter-group="timeline" data-filter="metadata">Metadata</button>
+        <button class="filter-chip" data-filter-group="timeline" data-filter="email">Email</button>
+        <button class="filter-chip" data-filter-group="timeline" data-filter="browser">Browser</button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if timeline %}
+            <ol class="tl">
+                {% for ev in timeline %}
+                <li class="tl-item {% if ev.severity %}sev-{{ ev.severity }}{% endif %}" data-filter-item="timeline" data-filter-value="{{ ev.module }}">
+                    <div class="tl-time">{{ ev.event_time | utc }}</div>
+                    <div class="tl-title"><span class="module-chip me-1">{{ ev.module }}</span>{{ ev.title }}</div>
+                    {% if ev.detail %}<div class="tl-detail">{{ ev.detail }}</div>{% endif %}
+                    <div class="tl-note">{{ ev.time_note }}</div>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <div class="fc-empty">
+                <div class="fc-empty-icon"><i class="bi bi-clock-history"></i></div>
+                <h6>No dated events yet</h6>
+                <p>Photo capture times, email dates, downloads and searches are merged here after analysis.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <p class="small text-muted mt-2">
+        All times are shown in UTC. Photo capture times carry no timezone; when a photo does not state one,
+        UTC{{ '%+d' | format((assumed_offset / 60) | int) }}:{{ '%02d' | format((assumed_offset | abs) % 60) }} is assumed
+        (change ASSUMED_LOCAL_UTC_OFFSET_MIN in .env).
+    </p>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- CHAIN OF CUSTODY -->
+<!-- ===================================================== -->
+
+<div class="tab-pane fade" id="tab-custody" role="tabpanel">
+
+    <div class="card">
+        <ul class="cu-list">
+            {% for a in audit_entries %}
+            {% set meta = action_meta(a.action) %}
+            <li class="cu-item tone-{{ meta[2] }}">
+                <div class="cu-icon"><i class="bi {{ meta[1] }}"></i></div>
+                <div class="flex-grow-1">
+                    <div class="cu-title">{{ meta[0] }}
+                        {% if a.evidence_id and ev_by_id.get(a.evidence_id) %}<span class="text-muted fw-normal">· {{ ev_by_id.get(a.evidence_id).original_filename }}</span>{% endif %}
+                    </div>
+                    {% if a.details %}<div class="cu-detail">{{ a.details }}</div>{% endif %}
+                    <div class="cu-meta">{{ a.created_at | utc }} · {{ a.user_name or 'system' }}{% if a.ip_address %} · {{ a.ip_address }}{% endif %}</div>
+                </div>
+            </li>
+            {% else %}
+            <li class="p-4 text-muted">No custody entries yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <p class="small text-muted mt-2">The log is append-only: there is no way to edit or delete an entry from the application.</p>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- REPORT -->
+<!-- ===================================================== -->
+
+<div class="tab-pane fade" id="tab-report" role="tabpanel">
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header">Final forensic report (PDF)</div>
+                <div class="card-body">
+                    <p class="text-muted">The report is generated from the database, so it always reflects the latest analysis. It contains:</p>
+                    <ul class="text-muted">
+                        <li>Case information and executive summary</li>
+                        <li>Metadata, email and browser analysis sections</li>
+                        <li>Overall risk assessment with its method</li>
+                        <li>Evidence integrity table (MD5 + SHA-256)</li>
+                        <li>Chain of custody, consolidated findings and the event timeline</li>
+                        <li>Methodology and limitations</li>
+                    </ul>
+                    <a href="{{ url_for('reports.generate_report', case_id=case.id) }}" class="btn btn-primary"><i class="bi bi-file-earmark-pdf me-1"></i>Generate PDF report</a>
+                    <a href="{{ url_for('risk_engine.risk_dashboard', case_id=case.id) }}" class="btn btn-outline-secondary ms-1">View risk assessment</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header">Before you export</div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 mb-2"><i class="bi {% if tampered %}bi-x-circle text-danger-fc{% else %}bi-check-circle text-success{% endif %}"></i>
+                        <span>{% if tampered %}{{ tampered | length }} evidence file(s) failed integrity{% else %}All evidence passed integrity checks{% endif %}</span></div>
+                    <div class="d-flex gap-2 mb-2"><i class="bi {% if risk.pending %}bi-exclamation-circle text-warning{% else %}bi-check-circle text-success{% endif %}"></i>
+                        <span>{% if risk.pending %}{{ risk.pending | length }} evidence file(s) not analyzed yet{% else %}All analyzable evidence has been analyzed{% endif %}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</div>
+
+{% endblock %}

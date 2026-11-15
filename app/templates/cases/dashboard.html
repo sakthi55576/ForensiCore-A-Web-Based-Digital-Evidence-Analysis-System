@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | ForensiCore{% endblock %}
+
+{% block content %}
+
+<div class="fc-page-header">
+    <div>
+        <h1 class="fc-page-title">Dashboard</h1>
+        <p class="fc-page-subtitle">Welcome back, {{ session.get('full_name', 'Investigator') }}. Here is what needs your attention.</p>
+    </div>
+    <div class="fc-page-actions">
+        <a href="{{ url_for('cases.create_case') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New Case</a>
+    </div>
+</div>
+
+<!-- ============ STATS ============ -->
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-folder2-open"></i></div>
+            <div class="stat-label">Cases</div>
+            <div class="stat-value">{{ stats.cases }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-file-earmark-lock2"></i></div>
+            <div class="stat-label">Evidence items</div>
+            <div class="stat-value">{{ stats.evidence }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card accent-low">
+            <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
+            <div class="stat-label">Integrity verified</div>
+            <div class="stat-value">{{ stats.verified }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card {% if stats.alerts %}accent-high{% endif %}">
+            <div class="stat-icon"><i class="bi bi-shield-x"></i></div>
+            <div class="stat-label">Integrity alerts</div>
+            <div class="stat-value">{{ stats.alerts | length }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+
+    <!-- ============ NEEDS ATTENTION ============ -->
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">Needs attention</div>
+            <div class="card-body p-0">
+                {% if stats.alerts or stats.pending %}
+                <ul class="cu-list">
+                    {% for e in stats.alerts %}
+                    <li class="cu-item tone-danger">
+                        <div class="cu-icon"><i class="bi bi-shield-x"></i></div>
+                        <div>
+                            <div class="cu-title"><a class="link-plain" href="{{ url_for('cases.evidence_detail', case_id=e.case_id, evidence_id=e.id) }}">{{ e.original_filename }}</a></div>
+                            <div class="cu-meta">Integrity {{ e.integrity_status | lower }} · {{ case_lookup[e.case_id].case_number }}</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    {% for e in stats.pending[:6] %}
+                    <li class="cu-item tone-warn">
+                        <div class="cu-icon"><i class="bi bi-hourglass-split"></i></div>
+                        <div>
+                            <div class="cu-title"><a class="link-plain" href="{{ url_for('cases.case_details', case_id=e.case_id) }}#tab-evidence">{{ e.original_filename }}</a></div>
+                            <div class="cu-meta">Waiting for analysis · {{ case_lookup[e.case_id].case_number }}</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="fc-empty">
+                    <div class="fc-empty-icon"><i class="bi bi-check2-circle"></i></div>
+                    <h6>All clear</h6>
+                    <p>No integrity alerts and nothing waiting for analysis.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ RECENT ACTIVITY ============ -->
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">Recent activity</div>
+            <div class="card-body p-0">
+                {% if activity %}
+                <ul class="cu-list">
+                    {% for a in activity %}
+                    {% set meta = action_meta(a.action) %}
+                    <li class="cu-item tone-{{ meta[2] }}">
+                        <div class="cu-icon"><i class="bi {{ meta[1] }}"></i></div>
+                        <div>
+                            <div class="cu-title">{{ meta[0] }}</div>
+                            <div class="cu-meta">{{ case_lookup[a.case_id].case_number if a.case_id in case_lookup else '' }} · {{ a.created_at | utc }}</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="fc-empty">
+                    <div class="fc-empty-icon"><i class="bi bi-activity"></i></div>
+                    <h6>No activity yet</h6>
+                    <p>Create a case and add evidence to get started.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============ CASES ============ -->
+
+<div class="card">
+    <div class="card-header">Your cases</div>
+    {% if cases %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Case</th><th>Title</th><th>Evidence</th><th>Status</th><th>Opened</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for c in cases %}
+                <tr>
+                    <td class="mono">{{ c.case_number }}</td>
+                    <td><a class="link-plain fw-semibold" href="{{ url_for('cases.case_details', case_id=c.id) }}">{{ c.case_title }}</a></td>
+                    <td>{{ c.evidence | length }}</td>
+                    <td>{{ c.status or 'Open' }}</td>
+                    <td class="text-muted small">{{ c.created_at | utc }}</td>
+                    <td class="text-end"><a href="{{ url_for('cases.case_details', case_id=c.id) }}" class="btn btn-sm btn-outline-secondary">Open</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="fc-empty">
+        <div class="fc-empty-icon"><i class="bi bi-folder-plus"></i></div>
+        <h6>No cases yet</h6>
+        <p>Open your first investigation case.</p>
+        <a href="{{ url_for('cases.create_case') }}" class="btn btn-primary btn-sm">Create case</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

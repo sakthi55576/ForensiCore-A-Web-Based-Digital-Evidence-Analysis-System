@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Metadata Analyzer | ForensiCore{% endblock %}
+
+{% block content %}
+{% set picker_title = "Metadata Analyzer" %}
+{% set picker_icon = "bi-file-earmark-image" %}
+{% set picker_desc = "Inspect embedded EXIF data, device, GPS and signs of editing in photos." %}
+{% set analyze_endpoint = "metadata.analyze" %}
+{% set picker_types = "images (.jpg .png .tif)" %}
+{% set extra_endpoint = "" %}
+{% include "partials/_picker.html" %}
+{% endblock %}
